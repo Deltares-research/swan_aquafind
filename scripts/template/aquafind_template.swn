@@ -1,0 +1,186 @@
+!************************* ${'%s' % fname} ************************ 
+
+${'%s' % meta_string}
+
+!************************* MODEL INPUT ****************************
+
+SET NAUTICAL 
+SET LEVEL=${'%f' % level};
+SET CDCAP=${'%f' % cdcap}
+
+MODE ${'%s' % mode} 
+
+COORDINATES ${'%s' % coordinates}
+
+% if gridType=='REGULAR':
+CGRID REGULAR ${'%d' % xpc} ${'%d' % ypc} ${'%f' % alpc} ${'%f' % xlenc} ${'%f' % ylenc} ${'%d' % Nx} ${'%d' % Ny} CIRCLE ${'%d' % dir_res} ${'%f' % flow} ${'%f' % fhigh}                 
+% endif
+% if gridType=='CURV':
+CGRID CURVI ${'%d' % Nx} ${'%d' % Ny} EXCE 0.0 0.0 CIRCLE ${'%d' % dir_res} ${'%f' % flow} ${'%f' % fhigh}                 
+READ  COORD 1. ${'%s' % grid_info} 
+% endif
+% if gridType=='UNSTR':
+CGRID 	UNSTRUCTURED  CIRCLE ${'%d' % dir_res} ${'%f' % flow} ${'%f' % fhigh}
+READ 	UNSTRUCTURED  TRIANGLE ${'%s' % grid_info} 
+% endif
+
+% if gridType_bot=='REGULAR':
+INP BOTTOM REGULAR  ${'%d' % xpinp} ${'%d' % ypinp} ${'%f' % alpinp} ${'%d' % mxinp} ${'%d' % myinp} ${'%f' % dxinp} ${'%f' % dyinp} EXCE -999.               
+% endif
+% if gridType_bot=='CURV':
+INP   BOTTOM CURVI  0. 0. ${'%d' % mxinp} ${'%d' % myinp} EXCE -999.               
+% endif
+% if gridType_bot=='UNSTR':
+INPGRID BOTTOM UNSTRUC EXC -99
+READINP BOTTOM 1.0 ${'%s' % bottom_info}
+% endif
+
+READ BOTTOM 1. ${'%s' % bottom_info}
+
+$******************************************************************
+
+% if water_level:
+!-Water level input
+! grid definitie obv Swan_Zuno_flow
+INPGRID WLEV REGF '${'%s' % water_level_path}' NONSTAT ${'%s' % water_level_start} ${'%d' % water_level_dt} MIN ${'%s' % water_level_stop}
+READINP WLEV 1.0 '${'%s' % water_level_path}'
+% endif
+
+% if currents:
+!-Current (stroming) input
+! grid definitie obv Swan_Zuno_flow
+% if currents_nc:
+INPGRID CUR REGF  '${'%s' % currents_path}' NONSTAT ${'%s' % currents_start} ${'%d' % currents_dt} MIN ${'%s' % currents_stop}
+% else:
+INPGRID CUR REGular  ${'%d' % xpinp} ${'%d' % ypinp} ${'%f' % alpinp} ${'%d' % mxinp} ${'%d' % myinp} ${'%f' % dxinp} ${'%f' % dyinp} 
+% endif:
+READINP CUR  1.0 '${'%s' % currents_path}'
+% endif
+
+% if wind==0:
+
+!-Wind input
+! grid definitie obv Swan_Dcsm_wind
+INPGRID WIND REGF '${'%s' % wind_path}' NONSTAT ${'%s' % wind_start} ${'%d' % wind_dt} MIN ${'%s' % wind_stop}
+READINP WIND ${'%f' % wind_factor} '${'%s' % wind_path}'
+
+% else:
+
+WIND  ${'%f' % wind_speed} ${'%f' % wind_dir}
+
+% endif
+
+% if winddrag is not None:
+wind drag ${'%s' % winddrag}
+% endif
+
+% if obstacles_path is not None:
+! obstacles
+INCLUDE '${'%s' % obstacles_path}'
+% endif
+!************************************* BOUNDARY CONDITIONS **************************************
+% if bc_type=='specsidefile':
+BOUNDSPEC SIDE ${'%s' % boundary_side} CCW CONSTANT FILE '${'%s' % bc_path}'
+% endif
+
+% if bc_type=='nest':
+BOUND NEST '${'%s' % bc_path}' OPEN
+% endif
+
+% if bc_type=='par':
+BOUnd SHAPespec JONswap DSPR ${'%s' % dspr_setting}
+BOUndspec SIDE ${'%s' % boundary_side} CCW CON FILE '${'%s' % bc_file}'
+${'%s' % initial}
+% endif
+
+% if hotstart:
+INITIAL HOTSTART 'swan-restart.nc' NETCDF 
+%endif
+
+!****************************************** PHYSICA *********************************************
+% if GEN3 is not None:
+GEN3 ${'%s' % GEN3}
+% endif
+
+% if SSWELL is not None:
+SSWELL
+% endif
+
+% if QUAD is not None:
+QUAD ${'%s' % QUAD}
+% endif
+
+% if TRIAD is not None:
+TRIAD ${'%s' % TRIAD}
+% endif
+
+% if FRIC is not None:
+FRIC ${'%s' % FRIC}
+% endif
+
+% if BREA is not None:
+BREA ${'%s' % BREA}
+% endif
+
+% if WCAP is not None:
+WCAP ${'%s' % WCAP}
+% endif
+
+!************************************ NUMERICAL PARAMETERS ***************************************
+
+${'%s' % NUM}
+
+% if gridType=='REGULAR':
+NUM ACCUR 0.02 0.02 0.02 98 NONSTAT mxitns=20
+% endif
+% if gridType=='CURV':
+NUM ACCUR 0.02 0.02 0.02 98 NONSTAT mxitns=20
+% endif
+% if gridType=='UNSTR':
+NUMERIC STOPC 	   DABS=0.005 DREL=0.01 CURVAT=0.005 NPNTS=99 NONSTAT 40
+% endif
+
+!************************************ OUTPUT ***************************************
+% for item in pnt.keys():
+POINTS '${'%s' % item}'    FILE '${'%s' % pnt[item]['pnt_file']}'
+% endfor
+
+BLOCK 'COMPGRID' NOHEAD  'output/swan2D.nc' LAYOUT 3 &
+ % for vars in block_variables:
+ ${vars}\
+ % endfor
+   OUT ${'%s' % start} ${'%s' % block_dt}
+
+% for item in pnt.keys():
+% if pnt[item]['spec1D']:
+SPECOUT '${'%s' % item}'    SPEC1D ABS 'output/swan_spectra1D_${'%s' % item}.${'%s' % pnt[item]['ext']}' OUT ${'%s' % start} ${'%s' % pnt[item]['pnt_dt']}
+% endif
+% endfor
+
+% for item in pnt.keys():
+% if pnt[item]['spec2D']:
+SPECOUT '${'%s' % item}'    SPEC2D ABS 'output/SPEC_${'%s' % item}.${'%s' % pnt[item]['ext']}'        OUT ${'%s' % start} ${'%s' % pnt[item]['pnt_dt']} 
+% endif
+% endfor
+
+% for item in pnt.keys():
+TABLE   '${'%s' % item}' HEADER     'output/POINTS_${'%s' % item}.TAB' &
+ % for vars in pnt[item]['pnt_variables']:
+ ${vars}\
+ % endfor 
+ OUT ${'%s' % start} ${'%s' % pnt[item]['pnt_dt']}
+% endfor
+
+$ WRITE RESTART FILES AS NETCDF
+!SPEC 'COMPGRID' RELATIVE 'swan-state.nc' MDGRID OUTPUT ${'%s' % stop} 1 HR
+
+TEST 1 0
+
+% if stat:
+% for item in stat_dates:
+COMPUTE STAT ${'%s' % item} 
+% endfor
+% else:
+COMPUTE NONSTAT ${'%s' % start} ${'%d' % dt} ${'%s' % dt_unit} ${'%s' % stop}
+% endif
+STOP
