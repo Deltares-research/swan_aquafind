@@ -17,7 +17,7 @@ import re
 print("Python: current working directory:", os.getcwd())
 
 ## add swan toolbox to path
-sys.path.append(os.path.abspath(os.path.join("02_scripts", "swan-py-toolbox")))
+sys.path.append(os.path.abspath(os.path.join("swan-py-toolbox")))
 from swanToolBox import extract_accuracy_data
 
 from swanToolBox.swan_postprocessing.read_SWAN import (
