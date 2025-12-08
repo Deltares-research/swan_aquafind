@@ -117,6 +117,10 @@ def groupspeed(h, T):
 ## analyse sims
 ###############################################################################
 
+fig1, ax1 = plt.subplots(figsize=[12, 12], layout="constrained")
+fig2, ax2 = plt.subplots(figsize=[12, 12], layout="constrained")
+fig3, ax3 = plt.subplots(figsize=[12, 12], layout="constrained")
+
 failed_sims = []
 ## make combinations
 for ii, item in enumerate(combinations):
@@ -165,15 +169,22 @@ for ii, item in enumerate(combinations):
         os.path.join(path_output, "POINTS_P2.TAB")
     )  # does not work perfectly
 
+    Hsig_xoutput = tab_data.Hsig.values[
+        np.where(tab_data.Xp == output_x)[0][0],
+        np.where(tab_data.Yp == output_y)[0][0],
+        :,
+    ]
+    Hsig_x0 = tab_data.Hsig.values[
+        np.where(tab_data.Xp == 0)[0][0],
+        np.where(tab_data.Yp == output_y)[0][0],
+        :,
+    ]
+
     ############################################
     #### Hsig vs Tp at specific location
-    fig1, ax1 = plt.subplots(figsize=[12, 12], layout="constrained")
+
     ax1.plot(
-        tab_data.Hsig.values[
-            np.where(tab_data.Xp == output_x)[0][0],
-            np.where(tab_data.Yp == output_y)[0][0],
-            :,
-        ],
+        Hsig_xoutput,
         tab_data.TPsmoo.values[
             np.where(tab_data.Xp == output_x)[0][0],
             np.where(tab_data.Yp == output_y)[0][0],
@@ -184,19 +195,59 @@ for ii, item in enumerate(combinations):
 
     ############################################
     #### Hsig at x0 versus output_x
+    ax2.plot(
+        Hsig_x0,
+        Hsig_xoutput,
+        ".",
+    )
+
+    ############################################
+    #### Hsig diff (in time) at x0 versus Hsig at x0
+
+    ax3.plot(
+        Hsig_x0,
+        np.diff(Hsig_x0, prepend=Hsig_x0[0]),
+        ".",
+    )
 
 
 ## save figs after loop
 
 ax1.set_xlabel("Hsig (m)")
 ax1.set_ylabel("Tp (s)")
-ax1.set_title("Hsig vs Tp at x={}, y={}".format(output_x, output_y))
+ax1.set_title("Hsig vs Tp at x_output, y={}".format(output_y))
 dir1 = os.path.join(path_overview, "Hsig_vs_Tp")
 if not os.path.exists(dir1):
     os.mkdir(dir1)
 fig1.savefig(
     os.path.join(
         dir1,
-        "Hsig_vs_Tp_x={}_y={}.png".format(output_x, output_y),
+        "Hsig_vs_Tp_x_output_y={}.png".format(output_y),
+    )
+)
+
+ax2.set_xlabel("Hsig at x=0 (m)")
+ax2.set_ylabel("Hsig at x={}".format(output_x))
+ax2.set_title("Hsig at x=0 versus Hsig at x_output, y={}".format(output_y))
+dir2 = os.path.join(path_overview, "Hsig_x0_vs_Hsig_x")
+if not os.path.exists(dir2):
+    os.mkdir(dir2)
+fig2.savefig(
+    os.path.join(
+        dir2,
+        "Hsig_x0_vs_Hsig_x_output_y={}.png".format(output_y),
+    )
+)
+
+ax3.set_xlabel("Hsig at x=0 (m)")
+ax3.set_ylabel("dHsig/dt at x=0 (m/10min)")
+ax3.set_title("Hsig change rate at x=0 versus Hsig at x=0, y={}".format(output_y))
+dir3 = os.path.join(path_overview, "dHsig_dt_x0_vs_Hsig_x0")
+if not os.path.exists(dir3):
+    os.mkdir(dir3)
+fig3.savefig(
+    os.path.join(
+        dir3,
+        "dHsig_dt_x0_vs_Hsig_x0_y={}.png".format(output_y),
     )
 )

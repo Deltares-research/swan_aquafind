@@ -128,17 +128,14 @@ WCAP ${'%s' % WCAP}
 
 !************************************ NUMERICAL PARAMETERS ***************************************
 
-${'%s' % NUM}
+${'%s' % NUMSCHEME}
 
-% if gridType=='REGULAR':
-NUM ACCUR 0.02 0.02 0.02 98 NONSTAT mxitns=20
+% if NUM is None:
+NUM STOPC DABS=0.005  DREL=0.01  CURVAT=0.005  NPNTS=100 ${'%s' % mode} 80
+% else:
+${NUM}
 % endif
-% if gridType=='CURV':
-NUM ACCUR 0.02 0.02 0.02 98 NONSTAT mxitns=20
-% endif
-% if gridType=='UNSTR':
-NUMERIC STOPC 	   DABS=0.005 DREL=0.01 CURVAT=0.005 NPNTS=99 NONSTAT 40
-% endif
+
 
 !************************************ OUTPUT ***************************************
 % for item in pnt.keys():

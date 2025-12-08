@@ -74,15 +74,12 @@ domain_length = 30  # length of the domain in km
 ## variations
 wind_list = [10]  # [0, 5, 10, 15, 20]
 wind_dir_list = [270]
-offshore_wave_height_list = [1]  # [0.0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5]
-offshore_peak_period_list = [10]  # [5.0, 7.5, 10.0, 12.5, 15, 17.5, 20]
+offshore_wave_height_list = [3]  # [0.0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5]
+offshore_peak_period_list = [5, 20]  # [5.0, 7.5, 10.0, 12.5, 15, 17.5, 20]
 offshore_wave_dir_list = [270.0]
 offshore_dspr_list = [20]  #!wat doen we hiermee?
 bathy_list = ["constantBed"]
-time_series_list = ["D"]  # ["A", "B", "C", "D", "E", "F"]
-
-!!! quadruplets uit bij wind=0
-STOPC ipv ACCUR, kijken welke defaults
+time_series_list = ["B"]  # ["A", "B", "C", "D", "E", "F"]
 
 # !! toevoegen initial in swan input file, dan kan runup time korter!
 
@@ -155,8 +152,6 @@ for ii, item in enumerate(combinations):
         )
         continue
 
-
-
     if wind == 0 and offshore_wave_height == 0:
         print("Skipping 0m wave height with no wind")
         continue
@@ -169,8 +164,7 @@ for ii, item in enumerate(combinations):
         )
         continue
 
-
-#### checks die we niet doen:
+    #### checks die we niet doen:
     # if wind < 10 and offshore_wave_height > 2.0 and offshore_peak_period < 10:
     #     print("Skipping low wind {} for Hm0={:2.2f} and Tp={:2.2f}".format(wind, offshore_wave_height, offshore_peak_period))
     #     continue
@@ -238,6 +232,8 @@ for ii, item in enumerate(combinations):
             "dt": dt_minutes,
             "stop": end_time_sims + spinup_time,
             "meta_string": meta_string,
+            "NUMSCHEME": "PROP BSBT",
+            # "NUM":"NUM STOPC DABS=0.005  DREL=0.01  CURVAT=0.005  NPNTS=100 NONSTAT MXITNS=80",
         }
     )
 
@@ -492,7 +488,7 @@ for ii, item in enumerate(combinations):
         {
             "GEN3": "ST6 5.6E-6 17.5E-5 VECTAU U10P 31. AGROW",
             "SSWELL": "",
-            "QUAD": "iquad=3",
+            "QUAD": "iquad=3" if wind > 0 else "off quad",
             "FRIC": "JONSWAP 0.038",
             "TRIAD": "ITRIAD=11 TRFAC=0.1 CUTFR=2.5",
             "BREA": "CONST   1.0    0.73",
