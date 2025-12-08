@@ -26,6 +26,12 @@ from swanToolBox.swan_postprocessing.read_SWAN import (
 
 # Comment this line in innit of swan_postprocessing\: from .animate_**
 
+def git_version():
+    from subprocess import Popen, PIPE
+    gitproc = Popen(['git', 'rev-parse','HEAD'], stdout = PIPE)
+    (stdout, _) = gitproc.communicate()
+    return stdout.strip()
+
 ###############################################################################
 ## user inputs
 ###############################################################################
@@ -570,9 +576,10 @@ try:
         ds.attrs["description"] = (
             "Energy density from SWAN calculations, per 10 minutes"
         )
-
+        git_revision = git_version()
+        ds.attrs["git_revision"] = "git_revision_hash: {}".format(git_revision.decode("utf-8"))
         # locatie, frequentie, invoer, ... etc toevoegen
-
+        
         ds.to_netcdf(
             os.path.join(fig_path, sim_name, sim_name + "_output.nc"),
             mode="w",
