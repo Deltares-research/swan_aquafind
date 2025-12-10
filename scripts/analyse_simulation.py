@@ -734,6 +734,10 @@ try:
         ds.attrs["description"] = (
             "Energy density from SWAN calculations, per 10 minutes"
         )
+        git_revision = git_version()
+        ds.attrs["git_revision"] = "git_revision_hash: {}".format(
+            git_revision.decode("utf-8")
+        )
 
         # locatie, frequentie, invoer, ... etc toevoegen
 
