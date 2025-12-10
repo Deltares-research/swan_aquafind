@@ -4,6 +4,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
+from matplotlib.colors import BoundaryNorm
 import xarray as xr
 import math
 import argparse
@@ -26,11 +27,14 @@ from swanToolBox.swan_postprocessing.read_SWAN import (
 
 # Comment this line in innit of swan_postprocessing\: from .animate_**
 
+
 def git_version():
     from subprocess import Popen, PIPE
-    gitproc = Popen(['git', 'rev-parse','HEAD'], stdout = PIPE)
+
+    gitproc = Popen(["git", "rev-parse", "HEAD"], stdout=PIPE)
     (stdout, _) = gitproc.communicate()
     return stdout.strip()
+
 
 ###############################################################################
 ## user inputs
@@ -69,6 +73,10 @@ match3 = re.search(r"_u=([\d.]+)", sim_name)
 wind = float(match3.group(1))
 match4 = re.search(r"Du=([\d.]+)", sim_name)
 wind_dir = float(match4.group(1))
+match5 = re.search(r"Hm0=([\d.]+)", sim_name)
+offshore_wave_height = float(match5.group(1))
+match6 = re.search(r"Dspr=([\d.]+)", sim_name)
+offshore_dspr = float(match6.group(1))
 
 
 ###############################################################################
@@ -127,16 +135,25 @@ try:
         sorted_indices = np.argsort(dir_array)
         dir_array_sorted = dir_array[sorted_indices]
 
+        bounds = [0, 0.05, 0.1, 0.5, 1, 5, 10, 25, 100]
+        cmap = plt.get_cmap("jet")
+        norm = BoundaryNorm(boundaries=bounds, ncolors=cmap.N)
+
         plt.subplot(2, 3, 1)
         loc_index = 0
         plt.contourf(
             swan_spec.frequency.values,
             dir_array_sorted,
             swan_spec.density.values[time_index0, loc_index1, ::].T[sorted_indices, :],
+            levels=bounds,
+            cmap=cmap,
+            norm=norm,
         )
         plt.xlabel("$f$ [$Hz$]")
         plt.ylabel(r"$\theta$ [$^\circ$]")
-        plt.colorbar()
+        cbar = plt.colorbar(ticks=bounds)
+        cbar.ax.set_yticklabels([str(b) for b in bounds])
+        plt.xlim(0, 0.5)
         plt.title(
             "$x={:2.2f}m$ {}".format(
                 swan_spec.x[loc_index1].values,
@@ -150,10 +167,15 @@ try:
             swan_spec.frequency.values,
             dir_array_sorted,
             swan_spec.density.values[time_index0, loc_index2, ::].T[sorted_indices, :],
+            levels=bounds,
+            cmap=cmap,
+            norm=norm,
         )
         plt.xlabel("$f$ [$Hz$]")
         plt.ylabel(r"$\theta$ [$^\circ$]")
-        plt.colorbar()
+        cbar = plt.colorbar(ticks=bounds)
+        cbar.ax.set_yticklabels([str(b) for b in bounds])
+        plt.xlim(0, 0.5)
         plt.title(
             "$x={:2.2f}m$ {}".format(
                 swan_spec.x[loc_index2].values,
@@ -167,10 +189,15 @@ try:
             swan_spec.frequency.values,
             dir_array_sorted,
             swan_spec.density.values[time_index1, loc_index1, ::].T[sorted_indices, :],
+            levels=bounds,
+            cmap=cmap,
+            norm=norm,
         )
         plt.xlabel("$f$ [$Hz$]")
         plt.ylabel(r"$\theta$ [$^\circ$]")
-        plt.colorbar()
+        cbar = plt.colorbar(ticks=bounds)
+        cbar.ax.set_yticklabels([str(b) for b in bounds])
+        plt.xlim(0, 0.5)
         plt.title(
             "$x={:2.2f}m$ {}".format(
                 swan_spec.x[loc_index1].values,
@@ -184,10 +211,15 @@ try:
             swan_spec.frequency.values,
             dir_array_sorted,
             swan_spec.density.values[time_index1, loc_index2, ::].T[sorted_indices, :],
+            levels=bounds,
+            cmap=cmap,
+            norm=norm,
         )
         plt.xlabel("$f$ [$Hz$]")
         plt.ylabel(r"$\theta$ [$^\circ$]")
-        plt.colorbar()
+        cbar = plt.colorbar(ticks=bounds)
+        cbar.ax.set_yticklabels([str(b) for b in bounds])
+        plt.xlim(0, 0.5)
         plt.title(
             "$x={:2.2f}m$ {}".format(
                 swan_spec.x[loc_index2].values,
@@ -201,10 +233,15 @@ try:
             swan_spec.frequency.values,
             dir_array_sorted,
             swan_spec.density.values[time_index2, loc_index1, ::].T[sorted_indices, :],
+            levels=bounds,
+            cmap=cmap,
+            norm=norm,
         )
         plt.xlabel("$f$ [$Hz$]")
         plt.ylabel(r"$\theta$ [$^\circ$]")
-        plt.colorbar()
+        cbar = plt.colorbar(ticks=bounds)
+        cbar.ax.set_yticklabels([str(b) for b in bounds])
+        plt.xlim(0, 0.5)
         plt.title(
             "$x={:2.2f}m$ {}".format(
                 swan_spec.x[loc_index1].values,
@@ -218,10 +255,15 @@ try:
             swan_spec.frequency.values,
             dir_array_sorted,
             swan_spec.density.values[time_index2, loc_index2, ::].T[sorted_indices, :],
+            levels=bounds,
+            cmap=cmap,
+            norm=norm,
         )
         plt.xlabel("$f$ [$Hz$]")
         plt.ylabel(r"$\theta$ [$^\circ$]")
-        plt.colorbar()
+        cbar = plt.colorbar(ticks=bounds)
+        cbar.ax.set_yticklabels([str(b) for b in bounds])
+        plt.xlim(0, 0.5)
         plt.title(
             "$x={:2.2f}m$ {}".format(
                 swan_spec.x[loc_index2].values,
@@ -253,14 +295,48 @@ try:
         plt.axis("equal")
         plt.xlabel("RD x (m)")
         plt.ylabel("RD y (m)")
-        plt.legend()
+        plt.legend(loc="best")
         plt.savefig(os.path.join(fig_path, sim_name, "bed.png"))
         plt.close(fig)
         #############
         maptime = map.time.values
+        maptime_first = maptime[3]
+        fig, ax = plt.subplots(figsize=[12, 12])
+        pcm = ax.pcolor(
+            map.x.values,
+            map.y.values,
+            map.hs.values[3, :, :],
+            vmin=np.nanmin(map.hs.values[3, :, :]),
+            vmax=np.nanmax(map.hs.values[3, :, :]),
+        )
+        step = 10
+        plt.quiver(
+            map.x.values[::step],
+            map.y.values[::step],
+            -1 * np.cos(np.deg2rad(map.theta0.values[3, ::step, ::step] - 90)),
+            -1 * np.sin(np.deg2rad(map.theta0.values[3, ::step, ::step] - 90)),
+        )
+        cbar = fig.colorbar(pcm, ax=ax)
+        cbar.set_label("Hs [m]")
+        plt.plot(
+            tab_dummy.iloc[:, 1], tab_dummy.iloc[:, 2], "k.", label="buoy locations"
+        )
+        plt.xlabel("RD x (m)")
+        plt.ylabel("RD y (m)")
+        plt.title("Hs" + str(pd.to_datetime(maptime_first)))
+        plt.legend(loc="best")
+        plt.axis("equal")
+        plt.savefig(os.path.join(fig_path, sim_name, "Hs_t0_map.png"))
+        plt.close(fig)
         maptime_last = maptime[-1]
         fig, ax = plt.subplots(figsize=[12, 12])
-        plt.pcolor(map.x.values, map.y.values, map.hs.values[-1, :, :])
+        pcm = ax.pcolor(
+            map.x.values,
+            map.y.values,
+            map.hs.values[-1, :, :],
+            vmin=np.nanmin(map.hs.values[-1, :, :]),
+            vmax=np.nanmax(map.hs.values[-1, :, :]),
+        )
         step = 10
         plt.quiver(
             map.x.values[::step],
@@ -268,7 +344,7 @@ try:
             -1 * np.cos(np.deg2rad(map.theta0.values[-1, ::step, ::step] - 90)),
             -1 * np.sin(np.deg2rad(map.theta0.values[-1, ::step, ::step] - 90)),
         )
-        cbar = plt.colorbar()
+        cbar = fig.colorbar(pcm, ax=ax)
         cbar.set_label("Hs [m]")
         plt.plot(
             tab_dummy.iloc[:, 1], tab_dummy.iloc[:, 2], "k.", label="buoy locations"
@@ -276,7 +352,7 @@ try:
         plt.xlabel("RD x (m)")
         plt.ylabel("RD y (m)")
         plt.title("Hs" + str(pd.to_datetime(maptime_last)))
-        plt.legend()
+        plt.legend(loc="best")
         plt.axis("equal")
         plt.savefig(os.path.join(fig_path, sim_name, "Hs_map.png"))
         plt.close(fig)
@@ -284,14 +360,14 @@ try:
         maptime = map.time.values
         maptime_last = maptime[-1]
         fig, ax = plt.subplots(figsize=[12, 12])
-        plt.pcolor(map.x.values, map.y.values, map.spread.values[-1, :, :])
-        cbar = plt.colorbar()
+        pcm = ax.pcolor(map.x.values, map.y.values, map.spread.values[-1, :, :])
+        cbar = fig.colorbar(pcm, ax=ax)
         cbar.set_label(r"Dspr [$^\circ$]")
         # plt.plot(tab_dummy.iloc[:, 1], tab_dummy.iloc[:, 2], "k.", label="buoy locations")
         plt.xlabel("RD x (m)")
         plt.ylabel("RD y (m)")
         plt.title("Dspr " + str(pd.to_datetime(maptime_last)))
-        plt.legend()
+        plt.legend(loc="best")
         plt.axis("equal")
         plt.savefig(os.path.join(fig_path, sim_name, "Dspr_map.png"))
         plt.close(fig)
@@ -328,7 +404,7 @@ try:
     plt.title("Accuracy Over Time")
     plt.ylabel("Accuracy (%)")
     plt.xticks([])
-    plt.legend()
+    plt.legend(loc="best")
     plt.subplot(2, 1, 2)
     plt.plot(time_steps, iterations, marker="o")
     plt.ylabel("Iterations")
@@ -381,7 +457,7 @@ try:
         ax.xaxis.set_major_locator(mdates.HourLocator(interval=3))
         ax.xaxis.set_major_formatter(mdates.DateFormatter("%H:%M"))
         ax.set_ylabel("$H_{m0}$ [$m$]")
-        ax.legend()
+        ax.legend(loc="best")
 
         ax = plt.subplot(2, 2, 2)
         ax.plot(
@@ -450,15 +526,15 @@ try:
             ],
             label="model x = 0",
         )
-        ax.plot(
-            tab_data.Time.values,
-            tab_data.Dspr.values[
-                np.where(tab_data.Xp == 1000)[0][0],
-                np.where(tab_data.Yp == output_y)[0][0],
-                :,
-            ],
-            label="model x = 1500",
-        )
+        # ax.plot(
+        #     tab_data.Time.values,
+        #     tab_data.Dspr.values[
+        #         np.where(tab_data.Xp == 1000)[0][0],
+        #         np.where(tab_data.Yp == output_y)[0][0],
+        #         :,
+        #     ],
+        #     label="model x = 1500",
+        # )
         ax.plot(tab_data.Time.values, forced_conditions[:, 4], "k--")
         ax.xaxis.set_major_locator(mdates.HourLocator(interval=3))
         ax.xaxis.set_major_formatter(mdates.DateFormatter("%H:%M"))
@@ -467,59 +543,135 @@ try:
         plt.close(fig)
 
     #################################################
+    ## quality checks
+    #################################################
+
+    ###############################################################################
+    passed_quality_checks = True
+    error_message = []
+
+    ########## checks voor evidente fouten
+    # check depth
+    depth_tab = tab_data.Depth.values
+    if np.abs(depth - depth_tab).max() > 0.001:
+        print(f"depth deviates more than 0.001m from expected depth")
+        passed_quality_checks = False
+        error_message.append("depth deviation")
+    # check Hm0 based on limits
+    Hm0 = tab_data.Hsig.values
+    if (Hm0 < 0).any() or (Hm0 > 6).any():
+        print(f"Hm0 has values outside acceptable range (0-6m)")
+        passed_quality_checks = False
+        error_message.append("Hm0 out of range")
+    # check Tp based on limits
+    Tp = tab_data.TPsmoo.values[:, :, 1:]
+    if (Tp < 0.5).any() or (Tp > 30).any():
+        print(f"Tp has values outside acceptable range (0-30s)")
+        passed_quality_checks = False
+        error_message.append("Tp out of range")
+    # check Dspr based on limits
+    Dspr = tab_data.Dspr.values[:, :, 1:]
+    if (Dspr < 5).any() or (Dspr > 100).any():
+        print(f"Dspr has values outside acceptable range (5-100 degrees)")
+        passed_quality_checks = False
+        error_message.append("Dspr out of range")
+
+    ############ check based on Hm0, Tp during spinuptime
+    id_wanted = (swan_spec.time.values - swan_spec.time[0].values) <= spin_up_time
+
+    Hm0_x0 = tab_data.Hsig.values[
+        np.where(tab_data.Xp == 0)[0][0],
+        np.where(tab_data.Yp == output_y)[0][0],
+        id_wanted,
+    ]
+    Hm0_outputx = tab_data.Hsig.values[
+        np.where(tab_data.Xp == output_x)[0][0],
+        np.where(tab_data.Yp == output_y)[0][0],
+        id_wanted,
+    ]
+    if (np.abs(Hm0_outputx / Hm0_x0)).min() < 0.9:
+        print(f"Hm0 at output x is lower than 90% from Hm0 at x=0 during spinup time")
+        passed_quality_checks = False
+        error_message.append("Hm0 deviation during spinup")
+
+    Tp_x0 = tab_data.TPsmoo.values[
+        np.where(tab_data.Xp == 0)[0][0],
+        np.where(tab_data.Yp == output_y)[0][0],
+        id_wanted,
+    ]
+    Tp_outputx = tab_data.TPsmoo.values[
+        np.where(tab_data.Xp == output_x)[0][0],
+        np.where(tab_data.Yp == output_y)[0][0],
+        id_wanted,
+    ]
+
+    if (np.abs(Tp_x0 / Tp_outputx - 1)).max() > 0.1:
+        print(
+            f"Tp at output x deviates more than 10% from Tp at x=0 during spinup time"
+        )
+        passed_quality_checks = False
+        error_message.append("Tp deviation during spinup")
+
+    ## remove spinup time
+    id_wanted = (swan_spec.time.values - swan_spec.time[0].values) > spin_up_time
+    ## select only points with the same y location
+    y_index = np.where(
+        (swan_spec.y.values == output_y)
+        # & ((swan_spec.x.values == output_x) | (swan_spec.x.values == 0))
+    )[0]
+
+    E = swan_spec.density.isel(points=y_index).sel(time=id_wanted).values
+
+    Tp_at_outputx = tab_data.TPsmoo.values[
+        :,
+        np.where(tab_data.Yp == output_y)[0][0],
+        :,
+    ]
+    distance_array = np.floor(groupspeed(depth, Tp_at_outputx) * 1800 / 1000) * 1000
+
+    swan_spec["xwnd"] = swan_spec["xwnd"].fillna(0)
+    swan_spec["ywnd"] = swan_spec["ywnd"].fillna(0)
+
+    avg_wind = np.nanmean(
+        (swan_spec.xwnd.values[:, 0] ** 2 + swan_spec.ywnd.values[:, 0] ** 2) ** 0.5
+    )
+
+    if np.abs(np.nanmean(swan_spec.depth.values) - depth) > 0.1:
+        print(f"depth is not constant!")
+        passed_quality_checks = False
+        error_message.append("depth not constant")
+
+    if np.abs(avg_wind - wind) > 0.1:
+        print(f"wind speed is not constant in time!")
+        passed_quality_checks = False
+        error_message.append("wind speed not constant")
+
+    # check wind from map output, check if direction is constant
+    if avg_wind != 0:
+        # check wind direction constant, based on x and y wind components, and nautical convention
+        winddirectioncheck = (
+            270
+            - np.rad2deg(
+                np.arctan2(swan_spec.ywnd.values[:, 0], swan_spec.xwnd.values[:, 0])
+            )
+        ) % 360
+
+        if np.abs(winddirectioncheck - wind_dir).max() > 1:
+            print(f"wind direction is not constant")
+            dir_trigger = False
+            passed_quality_checks = False
+            error_message.append("wind direction not constant")
+
+        else:
+            print(f"wind direction is constant")
+            dir_trigger = True
+    else:
+        dir_trigger = True
+
+    #################################################
     ## netcdf
     #################################################
     if spec_output and write_netCDF:
-
-        ## remove spinup time
-        id_wanted = (swan_spec.time.values - swan_spec.time[0].values) > spin_up_time
-        ## select only points with the same y location
-        y_index = np.where(
-            (swan_spec.y.values == output_y)
-            # & ((swan_spec.x.values == output_x) | (swan_spec.x.values == 0))
-        )[0]
-
-        E = swan_spec.density.isel(points=y_index).sel(time=id_wanted).values
-
-        Tp_at_outputx = tab_data.TPsmoo.values[
-            :,
-            np.where(tab_data.Yp == output_y)[0][0],
-            :,
-        ]
-        distance_array = np.floor(groupspeed(depth, Tp_at_outputx) * 1800 / 1000) * 1000
-
-        swan_spec["xwnd"] = swan_spec["xwnd"].fillna(0)
-        swan_spec["ywnd"] = swan_spec["ywnd"].fillna(0)
-
-        avg_wind = np.nanmean(
-            (swan_spec.xwnd.values[:, 0] ** 2 + swan_spec.ywnd.values[:, 0] ** 2) ** 0.5
-        )
-
-        if np.abs(np.nanmean(swan_spec.depth.values) - depth) > 0.1:
-            print(f"depth is not constant!")
-
-        if np.abs(avg_wind - wind) > 0.1:
-            print(f"wind speed is not constant in time!")
-
-        # check wind from map output, check if direction is constant
-        if avg_wind != 0:
-            # check wind direction constant, based on x and y wind components, and nautical convention
-            winddirectioncheck = (
-                270
-                - np.rad2deg(
-                    np.arctan2(swan_spec.ywnd.values[:, 0], swan_spec.xwnd.values[:, 0])
-                )
-            ) % 360
-
-            if np.abs(winddirectioncheck - wind_dir).max() > 1:
-                print(f"wind direction is not constant")
-                dir_trigger = False
-
-            else:
-                print(f"wind direction is constant")
-                dir_trigger = True
-        else:
-            dir_trigger = True
 
         if dir_trigger:
             ds = xr.Dataset(
@@ -530,11 +682,17 @@ try:
                     ),
                     "wind_speed": wind,
                     "wind_direction": wind_dir,
+                    "mean_offshore_wave_height": offshore_wave_height,
+                    "mean_offshore_peak_period": offshore_peak_period,
+                    "mean_offshore_wave_direction": offshore_wave_dir,
+                    "mean_offshore_dspr": offshore_dspr,
                     "distance_30min": (
                         ("time", "x-location"),
                         distance_array.T[id_wanted, :],
                     ),
-                    # "water_depth": depth,
+                    "quality_check_passed": passed_quality_checks,
+                    "error_message": error_message,
+                    "water_depth": depth,
                 },
                 coords={
                     "time": swan_spec.time[id_wanted].values,
@@ -576,10 +734,9 @@ try:
         ds.attrs["description"] = (
             "Energy density from SWAN calculations, per 10 minutes"
         )
-        git_revision = git_version()
-        ds.attrs["git_revision"] = "git_revision_hash: {}".format(git_revision.decode("utf-8"))
+
         # locatie, frequentie, invoer, ... etc toevoegen
-        
+
         ds.to_netcdf(
             os.path.join(fig_path, sim_name, sim_name + "_output.nc"),
             mode="w",
