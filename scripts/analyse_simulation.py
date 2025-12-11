@@ -50,7 +50,7 @@ print("analysing:", sim_name)
 
 ## path to the main folder where the simulations will be stored
 model_path = "01_sims"
-fig_path = "00_results"
+fig_path = ""
 
 
 ## settings
