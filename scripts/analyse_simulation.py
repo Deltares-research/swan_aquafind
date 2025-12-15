@@ -110,7 +110,7 @@ IS_DOCKER = os.path.exists("output")
 # Set paths based on environment
 if IS_DOCKER:
     path_output = "output"
-    figure_output_path = "/output/figures"
+    figure_output_path = os.path.join(os.getcwd(), path_output, "figures")
     print(
         f"Running in Docker, output folder: {path_output}, figure output path: {figure_output_path}"
     )
