@@ -108,7 +108,16 @@ if not os.path.exists(os.path.join(model_path, sim_name, "output")):
     print("cannot find: {}".format(os.path.join(model_path, sim_name, "output")))
 
 
-path_output = os.path.join(model_path, sim_name, "output")
+# First check local path
+if os.path.exists(os.path.join(model_path, sim_name, "output")):
+    path_output = os.path.join(model_path, sim_name, "output")
+# Then check docker path
+elif os.path.exists("output"):
+    path_output = "output"
+# If not found, raise an error
+else:
+    raise FileNotFoundError(f"cannot find output folder at: {os.path.join(model_path, sim_name, 'output')} or ./output")
+
 ## create fig path
 if not os.path.exists(os.path.join(fig_path, sim_name)):
     os.mkdir(os.path.join(fig_path, sim_name))
