@@ -11,7 +11,7 @@ import argparse
 import re
 
 #################################
-## script to setup SWAN simulations
+## script to analyse SWAN simulations
 ## Requirements:
 ## - swan toolbox
 
@@ -104,25 +104,32 @@ def groupspeed(h, T):
 ###############################################################################
 
 
-if not os.path.exists(os.path.join(model_path, sim_name, "output")):
-    print("cannot find: {}".format(os.path.join(model_path, sim_name, "output")))
+# Check if running in Docker (output folder exists in current directory)
+IS_DOCKER = os.path.exists("output")
 
-
-# First check local path
-if os.path.exists(os.path.join(model_path, sim_name, "output")):
-    path_output = os.path.join(model_path, sim_name, "output")
-# Then check docker path
-elif os.path.exists("output"):
+# Set paths based on environment
+if IS_DOCKER:
     path_output = "output"
-# If not found, raise an error
+    figure_output_path = "/output/figures"
+    print(
+        f"Running in Docker, output folder: {path_output}, figure output path: {figure_output_path}"
+    )
+# Running locally
+elif os.path.exists(os.path.join(model_path, sim_name, "output")):
+    path_output = os.path.join(model_path, sim_name, "output")
+    figure_output_path = os.path.join(fig_path, sim_name)
+    print(
+        f"Running locally, output folder: {path_output}, figure output path: {figure_output_path}"
+    )
 else:
     raise FileNotFoundError(
-        f"cannot find output folder at: {os.path.join(model_path, sim_name, 'output')} or ./output"
+        f"Cannot find output folder at: {os.path.join(model_path, sim_name, 'output')} or ./output"
     )
 
-## create fig path
-if not os.path.exists(os.path.join(fig_path, sim_name)):
-    os.mkdir(os.path.join(fig_path, sim_name))
+# Create figure output path if it doesn't exist
+if not os.path.exists(figure_output_path):
+    os.makedirs(figure_output_path, exist_ok=True)
+
 try:
     ###############################################################################
     ## spectrum output
@@ -281,7 +288,7 @@ try:
                 np.datetime_as_string(swan_spec.time[time_index2].values, unit="h"),
             )
         )
-        plt.savefig(os.path.join(fig_path, sim_name, "spec.png"))
+        plt.savefig(os.path.join(figure_output_path, "spec.png"))
         plt.close(fig)
     ##################################################################################
     ## map output
@@ -307,7 +314,7 @@ try:
         plt.xlabel("RD x (m)")
         plt.ylabel("RD y (m)")
         plt.legend(loc="best")
-        plt.savefig(os.path.join(fig_path, sim_name, "bed.png"))
+        plt.savefig(os.path.join(figure_output_path, "bed.png"))
         plt.close(fig)
         #############
         maptime = map.time.values
@@ -337,7 +344,7 @@ try:
         plt.title("Hs" + str(pd.to_datetime(maptime_first)))
         plt.legend(loc="best")
         plt.axis("equal")
-        plt.savefig(os.path.join(fig_path, sim_name, "Hs_t0_map.png"))
+        plt.savefig(os.path.join(figure_output_path, "Hs_t0_map.png"))
         plt.close(fig)
         maptime_last = maptime[-1]
         fig, ax = plt.subplots(figsize=[12, 12])
@@ -365,7 +372,7 @@ try:
         plt.title("Hs" + str(pd.to_datetime(maptime_last)))
         plt.legend(loc="best")
         plt.axis("equal")
-        plt.savefig(os.path.join(fig_path, sim_name, "Hs_map.png"))
+        plt.savefig(os.path.join(figure_output_path, "Hs_map.png"))
         plt.close(fig)
         #############
         maptime = map.time.values
@@ -380,7 +387,7 @@ try:
         plt.title("Dspr " + str(pd.to_datetime(maptime_last)))
         plt.legend(loc="best")
         plt.axis("equal")
-        plt.savefig(os.path.join(fig_path, sim_name, "Dspr_map.png"))
+        plt.savefig(os.path.join(figure_output_path, "Dspr_map.png"))
         plt.close(fig)
         #############
 
@@ -421,7 +428,7 @@ try:
     plt.ylabel("Iterations")
     plt.grid(True)
     plt.xticks(rotation=45)
-    plt.savefig(os.path.join(fig_path, sim_name, "accur.png"))
+    plt.savefig(os.path.join(figure_output_path, "accur.png"))
     plt.close(fig)
 
     output_x = math.floor(groupspeed(depth, offshore_peak_period) * 1800 / 1000) * 1000
@@ -550,7 +557,7 @@ try:
         ax.xaxis.set_major_locator(mdates.HourLocator(interval=3))
         ax.xaxis.set_major_formatter(mdates.DateFormatter("%H:%M"))
         ax.set_ylabel(r"$D_{spr}$ [$^\circ$]")
-        fig.savefig(os.path.join(fig_path, sim_name, "point_output.png"))
+        fig.savefig(os.path.join(figure_output_path, "point_output.png"))
         plt.close(fig)
 
     #################################################
@@ -753,7 +760,7 @@ try:
         # locatie, frequentie, invoer, ... etc toevoegen
 
         ds.to_netcdf(
-            os.path.join(fig_path, sim_name, sim_name + "_output.nc"),
+            os.path.join(path_output, "SPEC_P2.nc"),
             mode="w",
             engine="netcdf4",
         )
