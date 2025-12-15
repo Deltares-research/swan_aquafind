@@ -161,7 +161,7 @@ for ii, item in enumerate(combinations):
     ###############################################################################
     if spec_output:
         swan_spec = xr.open_dataset(
-            os.path.join(path_output, "SPEC_p2.nc"), engine="netcdf4"
+            os.path.join(path_output, "SPEC_p2_original.nc"), engine="netcdf4"
         )
 
         fig, ax = plt.subplots(2, 3, figsize=[15, 8], layout="constrained")

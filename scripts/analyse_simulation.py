@@ -116,7 +116,9 @@ elif os.path.exists("output"):
     path_output = "output"
 # If not found, raise an error
 else:
-    raise FileNotFoundError(f"cannot find output folder at: {os.path.join(model_path, sim_name, 'output')} or ./output")
+    raise FileNotFoundError(
+        f"cannot find output folder at: {os.path.join(model_path, sim_name, 'output')} or ./output"
+    )
 
 ## create fig path
 if not os.path.exists(os.path.join(fig_path, sim_name)):
@@ -127,7 +129,7 @@ try:
     ###############################################################################
     if spec_output:
         swan_spec = xr.open_dataset(
-            os.path.join(path_output, "SPEC_P2.nc"), engine="netcdf4"
+            os.path.join(path_output, "SPEC_P2_original.nc"), engine="netcdf4"
         )
 
         fig, ax = plt.subplots(2, 3, figsize=[15, 8], layout="constrained")

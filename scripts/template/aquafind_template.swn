@@ -156,7 +156,7 @@ SPECOUT '${'%s' % item}'    SPEC1D ABS 'output/swan_spectra1D_${'%s' % item}.${'
 
 % for item in pnt.keys():
 % if pnt[item]['spec2D']:
-SPECOUT '${'%s' % item}'    SPEC2D ABS 'output/SPEC_${'%s' % item}.${'%s' % pnt[item]['ext']}'        OUT ${'%s' % start} ${'%s' % pnt[item]['pnt_dt']} 
+SPECOUT '${'%s' % item}'    SPEC2D ABS 'output/SPEC_${'%s' % item}_original.${'%s' % pnt[item]['ext']}'        OUT ${'%s' % start} ${'%s' % pnt[item]['pnt_dt']} 
 % endif
 % endfor
 
