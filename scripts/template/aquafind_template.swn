@@ -57,14 +57,16 @@ INPGRID CUR REGular  ${'%d' % xpinp} ${'%d' % ypinp} ${'%f' % alpinp} ${'%d' % m
 READINP CUR  1.0 '${'%s' % currents_path}'
 % endif
 
-% if wind==0:
+% if wind=='field':
 
 !-Wind input
 ! grid definitie obv Swan_Dcsm_wind
 INPGRID WIND REGF '${'%s' % wind_path}' NONSTAT ${'%s' % wind_start} ${'%d' % wind_dt} MIN ${'%s' % wind_stop}
 READINP WIND ${'%f' % wind_factor} '${'%s' % wind_path}'
 
-% else:
+% endif
+
+% if wind=='constant':
 
 WIND  ${'%f' % wind_speed} ${'%f' % wind_dir}
 
@@ -106,8 +108,10 @@ GEN3 ${'%s' % GEN3}
 SSWELL
 % endif
 
-% if QUAD is not None:
+% if QUAD.lower() != 'off quad':
 QUAD ${'%s' % QUAD}
+% else:
+OFF QUAD
 % endif
 
 % if TRIAD is not None:
