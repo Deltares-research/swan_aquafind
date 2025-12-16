@@ -31,7 +31,11 @@ from swanToolBox.swan_postprocessing.read_SWAN import (
 def git_version():
     from subprocess import Popen, PIPE
 
-    gitproc = Popen(["git", "rev-parse", "HEAD"], stdout=PIPE)
+    gitproc = Popen(
+        ["git", "rev-parse", "HEAD"],
+        stdout=PIPE,
+        cwd=os.path.join(os.getcwd(), "swan_aquafind"),
+    )
     (stdout, _) = gitproc.communicate()
     return stdout.strip()
 
@@ -564,6 +568,20 @@ try:
     ## quality checks
     #################################################
 
+    ########## SWAN warnings ######################################################
+    SWAN_warning_message = []
+    # open the PRINT text file and check for warnings
+    with open(os.path.join(path_output, "..", "PRINT"), "r") as f:
+        print_contents = f.read()
+        lower = print_contents.lower()
+        if ("warning" in lower) or ("error" in lower):
+
+            ## add the warning lines to error message
+            warning_lines = [line for line in lower.splitlines if "warning" in line]
+            error_lines = [line for line in lower.splitlines if "error" in line]
+            SWAN_warning_message.extend(warning_lines)
+            SWAN_warning_message.extend(error_lines)
+
     ###############################################################################
     passed_quality_checks = True
     error_message = []
@@ -704,13 +722,14 @@ try:
                     "mean_offshore_peak_period": offshore_peak_period,
                     "mean_offshore_wave_direction": offshore_wave_dir,
                     "mean_offshore_dspr": offshore_dspr,
+                    "water_depth": depth,
                     "distance_30min": (
                         ("time", "x-location"),
                         distance_array.T[id_wanted, :],
                     ),
                     "quality_check_passed": passed_quality_checks,
                     "error_message": error_message,
-                    "water_depth": depth,
+                    "SWAN_warnings": SWAN_warning_message,
                 },
                 coords={
                     "time": swan_spec.time[id_wanted].values,
