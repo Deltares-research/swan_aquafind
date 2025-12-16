@@ -72,14 +72,14 @@ dir_res = 72
 domain_length = 30  # length of the domain in km
 
 ## variations
-wind_list = [10]  # [0, 5, 10, 15, 20]
+wind_list = [0, 5]  # [0, 5, 10, 15, 20]
 wind_dir_list = [270]
-offshore_wave_height_list = [3]  # [0.0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5]
-offshore_peak_period_list = [5, 20]  # [5.0, 7.5, 10.0, 12.5, 15, 17.5, 20]
+offshore_wave_height_list = [3]  # [0.0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0]
+offshore_peak_period_list = [10]  # [5.0, 7.5, 10.0, 12.5, 15, 17.5, 20]
 offshore_wave_dir_list = [270.0]
 offshore_dspr_list = [20]  #!wat doen we hiermee?
 bathy_list = ["constantBed"]
-time_series_list = ["B"]  # ["A", "B", "C", "D", "E", "F"]
+time_series_list = ["A"]  # ["A", "B", "C", "D", "E", "F"]
 
 # !! toevoegen initial in swan input file, dan kan runup time korter!
 
@@ -109,7 +109,10 @@ comb = [
 combinations = list(itertools.product(*comb))
 
 ## TODO: now almost all combiantions are created but we could also add some requirements
-max_steepness = 1.0
+## max steepness based on 0.07 from WTI, but converted to steepness based on Tp
+max_steepness = 0.06
+
+max_steepness_series = 0.14
 
 
 ###############################################################################
@@ -124,6 +127,14 @@ def create_batch_h7(maindir, sims, command, runnumber=0):
     with open(os.path.join(maindir, "run_{}.sh".format(runnumber)), "w") as f:
         f.write(string)
 
+
+###############################################################################
+## figures for overview
+###############################################################################
+fig1, ax1 = plt.subplots(figsize=(8, 6))
+fig2, ax2 = plt.subplots(figsize=(8, 6))
+fig3, ax3 = plt.subplots(figsize=(8, 6))
+fig4, ax4 = plt.subplots(figsize=(8, 6))
 
 ###############################################################################
 ## create sims
@@ -144,6 +155,7 @@ for ii, item in enumerate(combinations):
 
     ## requirements
     steepness = offshore_wave_height / (9.81 * offshore_peak_period**2 / (2 * np.pi))
+    print("steepness is {}".format(steepness))
     if steepness > max_steepness:
         print(
             "Skipping steepness {:2.3f} for Hm0={:2.2f} Tp={:2.2f}".format(
@@ -342,10 +354,34 @@ for ii, item in enumerate(combinations):
 
         Hm0_series = timeseries.Hm0.values * offshore_wave_height
 
-        Tp_series = maxnorm_timeseries.Tp.values * offshore_peak_period
+        # if offshore_peak_period >= 15:
+        # Tp_series = maxnorm_timeseries.Tp.values * offshore_peak_period
         # else:
-        #     Tp_series = timeseries.Tp.values * offshore_peak_period
+        Tp_series = timeseries.Tp.values * offshore_peak_period
+        Tp_series[Tp_series > 20] = 20  ## cap max period to 20s
         print("any periods above 20s?", (Tp_series > 20).any())
+
+        ax1.plot(Hm0_series, Tp_series, ".")
+        steepness_series = Hm0_series / ((9.81 * Tp_series**2) / (2 * np.pi))
+        ax2.plot(Hm0_series, steepness_series, ".")
+        ax3.plot(Tp_series, steepness_series, ".")
+        ## check max steepness in series
+        if (steepness_series > max_steepness_series).any():
+            filter_steepness = np.where(
+                (steepness_series > max_steepness_series)
+                & ((Hm0_series > 0.1) | (Tp_series > 1))
+            )
+            temp_Hm0 = Hm0_series[filter_steepness]
+            temp_tp = np.sqrt(temp_Hm0 / max_steepness_series * (2 * np.pi) / 9.81)
+
+            Tp_series[filter_steepness] = temp_tp
+            print(
+                "Adjusting max steepness in time series for Hm0 values {} with Tp values {}".format(
+                    temp_Hm0, temp_tp
+                )
+            )
+        new_steepness_series = Hm0_series / ((9.81 * Tp_series**2) / (2 * np.pi))
+        ax4.plot(steepness_series, new_steepness_series, ".")
 
         ## make sure no negative values
         Hm0_series[Hm0_series < 0] = 0
@@ -416,7 +452,10 @@ for ii, item in enumerate(combinations):
     ##################################################################
 
     if wind_constant:
-        swan.set_wind(type="constant", wind_speed=wind, wind_dir=wind_dir)
+        if wind == 0:
+            swan.set_wind(type=None)
+        else:
+            swan.set_wind(type="constant", wind_speed=wind, wind_dir=wind_dir)
 
     else:
         assert (
@@ -621,6 +660,43 @@ for ii, item in enumerate(combinations):
         swan_setup_list = []
         ## update runnumber
         runnumber += 1
+
+ax1.set_xlabel("Hm0 (m)")
+ax1.set_ylabel("Tp (s)")
+ax1.set_title("Overview of all simulations: Hm0 vs Tp")
+# dir1 = os.path.join(path_overview, "Hm0_vs_Tp")
+# if not os.path.exists(dir1):
+#     os.mkdir(dir1)
+# fig1.savefig(
+#     os.path.join(dir1, "Hm0_vs_Tp.png")
+# )
+ax2.set_xlabel("Hm0 (m)")
+ax2.set_ylabel("Steepness (-)")
+ax2.set_title("Overview of all simulations: Hm0 vs Steepness")
+# dir2 = os.path.join(path_overview, "Hm0_vs_Steepness")
+# if not os.path.exists(dir2):
+#     os.mkdir(dir2)
+# fig2.savefig(
+#     os.path.join(dir2, "Hm0_vs_Steepness.png")
+# )
+ax3.set_xlabel("Tp (s)")
+ax3.set_ylabel("Steepness (-)")
+ax3.set_title("Overview of all simulations: Tp vs Steepness")
+# dir3 = os.path.join(path_overview, "Tp_vs_Steepness")
+# if not os.path.exists(dir3):
+#     os.mkdir(dir3)
+# fig3.savefig(
+#     os.path.join(dir3, "Tp_vs_Steepness.png")
+# )
+ax4.set_xlabel("Original Steepness (-)")
+ax4.set_ylabel("Adjusted Steepness (-)")
+ax4.set_title("Steepness adjustment overview")
+# dir4 = os.path.join(path_overview, "Steepness_adjustment")
+# if not os.path.exists(dir4):
+#     os.mkdir(dir4)
+# fig4.savefig(
+#     os.path.join(dir4, "Steepness_adjustment.png")
+# )
 
 if len(swan_setup_list) > 0:
     create_batch_h7(
