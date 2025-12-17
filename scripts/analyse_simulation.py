@@ -575,10 +575,10 @@ try:
         print_contents = f.read()
         lower = print_contents.lower()
         if ("warning" in lower) or ("error" in lower):
-
+            lines = lower.splitlines()
             ## add the warning lines to error message
-            warning_lines = [line for line in lower.splitlines if "warning" in line]
-            error_lines = [line for line in lower.splitlines if "error" in line]
+            warning_lines = [line for line in lines if "warning" in line]
+            error_lines = [line for line in lines if "error" in line]
             SWAN_warning_message.extend(warning_lines)
             SWAN_warning_message.extend(error_lines)
 
