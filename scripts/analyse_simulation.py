@@ -9,6 +9,9 @@ import xarray as xr
 import math
 import argparse
 import re
+from datetime import datetime
+from zoneinfo import ZoneInfo
+
 
 #################################
 ## script to analyse SWAN simulations
@@ -730,6 +733,11 @@ try:
                     "quality_check_passed": passed_quality_checks,
                     "error_message": error_message,
                     "SWAN_warnings": SWAN_warning_message,
+                    "local_time_of_analysis": str(
+                        datetime.now(ZoneInfo("Europe/Amsterdam")).strftime(
+                            "%Y-%m-%d %H:%M:%S %Z%z"
+                        )
+                    ),
                 },
                 coords={
                     "time": swan_spec.time[id_wanted].values,
