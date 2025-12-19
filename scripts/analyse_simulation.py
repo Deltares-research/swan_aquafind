@@ -716,18 +716,27 @@ try:
             ds = xr.Dataset(
                 {
                     "energy_density": (
-                        ("time", "x-location", "frequency", "directions"),
+                        ("time", "x_location", "frequency", "directions"),
                         E,
                     ),
-                    "wind_speed": wind,
-                    "wind_direction": wind_dir,
+                    "wind_speed": (
+                        ("time", "x_location"),
+                        wind * np.ones_like(distance_array.T[id_wanted, :]),
+                    ),
+                    "wind_direction": (
+                        ("time", "x_location"),
+                        wind_dir * np.ones_like(distance_array.T[id_wanted, :]),
+                    ),
                     "mean_offshore_wave_height": offshore_wave_height,
                     "mean_offshore_peak_period": offshore_peak_period,
                     "mean_offshore_wave_direction": offshore_wave_dir,
                     "mean_offshore_dspr": offshore_dspr,
-                    "water_depth": depth,
+                    "water_depth": (
+                        ("x_location"),
+                        depth * np.ones(len(swan_spec.x[y_index])),
+                    ),
                     "distance_30min": (
-                        ("time", "x-location"),
+                        ("time", "x_location"),
                         distance_array.T[id_wanted, :],
                     ),
                     "quality_check_passed": passed_quality_checks,
@@ -741,8 +750,8 @@ try:
                 },
                 coords={
                     "time": swan_spec.time[id_wanted].values,
-                    "x-location": swan_spec.x[y_index].values,
-                    "y-location": output_y,
+                    "x_location": swan_spec.x[y_index].values,
+                    "y_location": output_y,
                     "frequency": swan_spec.frequency.values,
                     "directions": swan_spec.direction.values,
                 },
@@ -752,7 +761,7 @@ try:
             # ds = xr.Dataset(
             #     {
             #         "energy_density": (
-            #             ("time", "x-location", "frequency", "directions"),
+            #             ("time", "x_location", "frequency", "directions"),
             #             E,
             #         ),
             #         "wind_speed": wind,
@@ -761,8 +770,8 @@ try:
             #     },
             #     coords={
             #         "time": swan_spec.time[id_wanted].values,
-            #         "x-location": swan_spec.x[y_index].values,
-            #         "y-location": output_y,
+            #         "x_location": swan_spec.x[y_index].values,
+            #         "y_location": output_y,
             #         "frequency": swan_spec.frequency.values,
             #         "directions": swan_spec.direction.values,
             #     },
