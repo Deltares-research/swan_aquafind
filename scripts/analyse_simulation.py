@@ -152,7 +152,15 @@ try:
         time_index2 = -10
 
         loc_index1 = 0
-        loc_index2 = -1
+        loc_index2 = np.where(
+            (swan_spec.y.values == output_y)
+            & (
+                swan_spec.x.values
+                == np.max(
+                    swan_spec.x.values[np.where(swan_spec.y.values == output_y)[0]]
+                )
+            )
+        )[0][0]
 
         dir_array = swan_spec.direction.values
         dir_array[np.where(dir_array < offshore_wave_dir - 180)] += 360
