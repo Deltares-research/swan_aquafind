@@ -110,7 +110,7 @@ combinations = list(itertools.product(*comb))
 
 ## TODO: now almost all combiantions are created but we could also add some requirements
 ## max steepness based on 0.07 from WTI, but converted to steepness based on Tp
-max_steepness = 0.06
+max_steepness = 0.07
 
 max_steepness_series = 0.14
 
@@ -168,10 +168,14 @@ for ii, item in enumerate(combinations):
         print("Skipping 0m wave height with no wind")
         continue
 
-    if offshore_wave_height == 0 and offshore_peak_period != 5 | offshore_dspr != 10:
+    if offshore_wave_height == 0 and (
+        offshore_peak_period != offshore_peak_period_list[0]
+        or offshore_dspr != offshore_dspr_list[0]
+        or time_series != time_series_list[0]
+    ):
         print(
-            "Skipping 0m wave height with Tp={:2.2f} Dspr={:2.2f}".format(
-                offshore_peak_period, offshore_dspr
+            "Skipping 0m wave height with Tp={:2.2f} Dspr={:2.2f} Timeseries={}".format(
+                offshore_peak_period, offshore_dspr, time_series
             )
         )
         continue
