@@ -66,7 +66,7 @@ analyse_points = True
 spec_output = True
 write_netCDF = True
 
-output_y = 15000
+output_y = 30000
 
 depth = 2000
 
