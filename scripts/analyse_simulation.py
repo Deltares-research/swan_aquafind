@@ -21,7 +21,9 @@ from zoneinfo import ZoneInfo
 print("Python: current working directory:", os.getcwd())
 
 ## add swan toolbox to path
-sys.path.append(os.path.abspath(os.path.join("swan_aquafind","scripts","swan-py-toolbox")))
+sys.path.append(
+    os.path.abspath(os.path.join("swan_aquafind", "scripts", "swan-py-toolbox"))
+)
 from swanToolBox import extract_accuracy_data
 
 from swanToolBox.swan_postprocessing.read_SWAN import (
@@ -460,120 +462,124 @@ try:
             os.path.join(path_output, "..", "wave.par"), skiprows=1
         )
 
-        fig = plt.figure(figsize=[12, 12], layout="constrained")
+        for xlocs in [output_x, 29000]:
 
-        ax = plt.subplot(2, 2, 1)
-        ax.plot(
-            tab_data.Time.values,
-            tab_data.Hsig.values[
-                np.where(tab_data.Xp == output_x)[0][0],
-                np.where(tab_data.Yp == output_y)[0][0],
-                :,
-            ],
-            label="model x = {:2.2f}".format(output_x),
-        )
-        ax.plot(
-            tab_data.Time.values,
-            tab_data.Hsig.values[
-                np.where(tab_data.Xp == 0)[0][0],
-                np.where(tab_data.Yp == output_y)[0][0],
-                :,
-            ],
-            label="model x = 0",
-        )
-        ax.plot(
-            tab_data.Time.values,
-            forced_conditions[:, 1],
-            "k--",
-            label="offshore Hm0",
-        )
-        ax.xaxis.set_major_locator(mdates.HourLocator(interval=3))
-        ax.xaxis.set_major_formatter(mdates.DateFormatter("%H:%M"))
-        ax.set_ylabel("$H_{m0}$ [$m$]")
-        ax.legend(loc="best")
+            fig = plt.figure(figsize=[12, 12], layout="constrained")
 
-        ax = plt.subplot(2, 2, 2)
-        ax.plot(
-            tab_data.Time.values,
-            tab_data.TPsmoo.values[
-                np.where(tab_data.Xp == output_x)[0][0],
-                np.where(tab_data.Yp == output_y)[0][0],
-                :,
-            ],
-        )
-        ax.plot(
-            tab_data.Time.values,
-            tab_data.TPsmoo.values[
-                np.where(tab_data.Xp == 0)[0][0],
-                np.where(tab_data.Yp == output_y)[0][0],
-                :,
-            ],
-            label="model x = 0",
-        )
-        ax.plot(tab_data.Time.values, forced_conditions[:, 2], "k--")
-        ax.set_ylim(0)
-        ax.xaxis.set_major_locator(mdates.HourLocator(interval=3))
-        ax.xaxis.set_major_formatter(mdates.DateFormatter("%H:%M"))
-        ax.set_ylabel("$T_{p}$ [$s$]")
+            ax = plt.subplot(2, 2, 1)
+            ax.plot(
+                tab_data.Time.values,
+                tab_data.Hsig.values[
+                    np.where(tab_data.Xp == xlocs)[0][0],
+                    np.where(tab_data.Yp == output_y)[0][0],
+                    :,
+                ],
+                label="model x = {:2.2f}".format(xlocs),
+            )
+            ax.plot(
+                tab_data.Time.values,
+                tab_data.Hsig.values[
+                    np.where(tab_data.Xp == 0)[0][0],
+                    np.where(tab_data.Yp == output_y)[0][0],
+                    :,
+                ],
+                label="model x = 0",
+            )
+            ax.plot(
+                tab_data.Time.values,
+                forced_conditions[:, 1],
+                "k--",
+                label="offshore Hm0",
+            )
+            ax.xaxis.set_major_locator(mdates.HourLocator(interval=3))
+            ax.xaxis.set_major_formatter(mdates.DateFormatter("%H:%M"))
+            ax.set_ylabel("$H_{m0}$ [$m$]")
+            ax.legend(loc="best")
 
-        ax = plt.subplot(2, 2, 3)
-        ax.plot(
-            tab_data.Time.values,
-            tab_data.Dir.values[
-                np.where(tab_data.Xp == output_x)[0][0],
-                np.where(tab_data.Yp == output_y)[0][0],
-                :,
-            ],
-        )
+            ax = plt.subplot(2, 2, 2)
+            ax.plot(
+                tab_data.Time.values,
+                tab_data.TPsmoo.values[
+                    np.where(tab_data.Xp == xlocs)[0][0],
+                    np.where(tab_data.Yp == output_y)[0][0],
+                    :,
+                ],
+            )
+            ax.plot(
+                tab_data.Time.values,
+                tab_data.TPsmoo.values[
+                    np.where(tab_data.Xp == 0)[0][0],
+                    np.where(tab_data.Yp == output_y)[0][0],
+                    :,
+                ],
+                label="model x = 0",
+            )
+            ax.plot(tab_data.Time.values, forced_conditions[:, 2], "k--")
+            ax.set_ylim(0)
+            ax.xaxis.set_major_locator(mdates.HourLocator(interval=3))
+            ax.xaxis.set_major_formatter(mdates.DateFormatter("%H:%M"))
+            ax.set_ylabel("$T_{p}$ [$s$]")
 
-        ax.plot(
-            tab_data.Time.values,
-            tab_data.Dir.values[
-                np.where(tab_data.Xp == 0)[0][0],
-                np.where(tab_data.Yp == output_y)[0][0],
-                :,
-            ],
-            label="model x = 0",
-        )
-        ax.plot(tab_data.Time.values, forced_conditions[:, 3], "k--")
-        ax.xaxis.set_major_locator(mdates.HourLocator(interval=3))
-        ax.xaxis.set_major_formatter(mdates.DateFormatter("%H:%M"))
-        ax.set_xticks(ax.get_xticks(), ax.get_xticklabels(), rotation=45, ha="right")
-        ax.set_ylabel(r"$\theta_m$ [$^\circ$]")
+            ax = plt.subplot(2, 2, 3)
+            ax.plot(
+                tab_data.Time.values,
+                tab_data.Dir.values[
+                    np.where(tab_data.Xp == xlocs)[0][0],
+                    np.where(tab_data.Yp == output_y)[0][0],
+                    :,
+                ],
+            )
 
-        ax = plt.subplot(2, 2, 4)
-        ax.plot(
-            tab_data.Time.values,
-            tab_data.Dspr.values[
-                np.where(tab_data.Xp == output_x)[0][0],
-                np.where(tab_data.Yp == output_y)[0][0],
-                :,
-            ],
-        )
-        ax.plot(
-            tab_data.Time.values,
-            tab_data.Dspr.values[
-                np.where(tab_data.Xp == 0)[0][0],
-                np.where(tab_data.Yp == output_y)[0][0],
-                :,
-            ],
-            label="model x = 0",
-        )
-        # ax.plot(
-        #     tab_data.Time.values,
-        #     tab_data.Dspr.values[
-        #         np.where(tab_data.Xp == 1000)[0][0],
-        #         np.where(tab_data.Yp == output_y)[0][0],
-        #         :,
-        #     ],
-        #     label="model x = 1500",
-        # )
-        ax.plot(tab_data.Time.values, forced_conditions[:, 4], "k--")
-        ax.xaxis.set_major_locator(mdates.HourLocator(interval=3))
-        ax.xaxis.set_major_formatter(mdates.DateFormatter("%H:%M"))
-        ax.set_ylabel(r"$D_{spr}$ [$^\circ$]")
-        fig.savefig(os.path.join(figure_output_path, "point_output.png"))
-        plt.close(fig)
+            ax.plot(
+                tab_data.Time.values,
+                tab_data.Dir.values[
+                    np.where(tab_data.Xp == 0)[0][0],
+                    np.where(tab_data.Yp == output_y)[0][0],
+                    :,
+                ],
+                label="model x = 0",
+            )
+            ax.plot(tab_data.Time.values, forced_conditions[:, 3], "k--")
+            ax.xaxis.set_major_locator(mdates.HourLocator(interval=3))
+            ax.xaxis.set_major_formatter(mdates.DateFormatter("%H:%M"))
+            ax.set_xticks(
+                ax.get_xticks(), ax.get_xticklabels(), rotation=45, ha="right"
+            )
+            ax.set_ylabel(r"$\theta_m$ [$^\circ$]")
+
+            ax = plt.subplot(2, 2, 4)
+            ax.plot(
+                tab_data.Time.values,
+                tab_data.Dspr.values[
+                    np.where(tab_data.Xp == xlocs)[0][0],
+                    np.where(tab_data.Yp == output_y)[0][0],
+                    :,
+                ],
+            )
+            ax.plot(
+                tab_data.Time.values,
+                tab_data.Dspr.values[
+                    np.where(tab_data.Xp == 0)[0][0],
+                    np.where(tab_data.Yp == output_y)[0][0],
+                    :,
+                ],
+                label="model x = 0",
+            )
+            # ax.plot(
+            #     tab_data.Time.values,
+            #     tab_data.Dspr.values[
+            #         np.where(tab_data.Xp == 1000)[0][0],
+            #         np.where(tab_data.Yp == output_y)[0][0],
+            #         :,
+            #     ],
+            #     label="model x = 1500",
+            # )
+            ax.plot(tab_data.Time.values, forced_conditions[:, 4], "k--")
+            ax.xaxis.set_major_locator(mdates.HourLocator(interval=3))
+            ax.xaxis.set_major_formatter(mdates.DateFormatter("%H:%M"))
+            ax.set_ylabel(r"$D_{spr}$ [$^\circ$]")
+            fig.savefig(os.path.join(figure_output_path, f"point_output{xlocs}.png"))
+            plt.close(fig)
 
     #################################################
     ## quality checks
