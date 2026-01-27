@@ -741,6 +741,22 @@ try:
                         ("time", "x_location"),
                         wind_dir * np.ones_like(distance_array.T[id_wanted, :]),
                     ),
+                    "Hs": (
+                        ("time", "x_location"),
+                        tab_data.Hsig.values[
+                            :,
+                            np.where(tab_data.Yp == output_y)[0][0],
+                            id_wanted,
+                        ].T,
+                    ),
+                    "Tp": (
+                        ("time", "x_location"),
+                        tab_data.TPsmoo.values[
+                            :,
+                            np.where(tab_data.Yp == output_y)[0][0],
+                            id_wanted,
+                        ].T,
+                    ),
                     "mean_offshore_wave_height": offshore_wave_height,
                     "mean_offshore_peak_period": offshore_peak_period,
                     "mean_offshore_wave_direction": offshore_wave_dir,
