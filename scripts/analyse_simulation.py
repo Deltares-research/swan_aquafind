@@ -681,6 +681,12 @@ try:
         :,
     ]
     distance_array = np.floor(groupspeed(depth, Tp_at_outputx) * 1800 / 1000) * 1000
+    groupspeed_array_per_freq = groupspeed(depth, 1 / swan_spec.frequency.values)
+    argmax_E = np.argmax(E, axis=2)
+    max_E = np.max(E, axis=2)
+    freq_at_peak = swan_spec.frequency.values[argmax_E]
+    freq_at_peak[max_E == 0] = np.nan
+    groupspeed_at_peakperiod = groupspeed(depth, 1 / freq_at_peak)
 
     swan_spec["xwnd"] = swan_spec["xwnd"].fillna(0)
     swan_spec["ywnd"] = swan_spec["ywnd"].fillna(0)
@@ -769,6 +775,11 @@ try:
                         ("time", "x_location"),
                         distance_array.T[id_wanted, :],
                     ),
+                    "groupspeed_at_peakperiod": (
+                        ("time", "x_location", "directions"),
+                        groupspeed_at_peakperiod,
+                    ),
+                    "groupspeed_per_freq": ("frequency", groupspeed_array_per_freq),
                     "quality_check_passed": passed_quality_checks,
                     "error_message": error_message,
                     "SWAN_warnings": SWAN_warning_message,
@@ -814,7 +825,8 @@ try:
         ds["distance_30min"].attrs[
             "description"
         ] = "Distance wave with peak period travels in 30 minutes based on group speed in deep water"
-
+        ds["groupspeed_at_peakperiod"].attrs["units"] = "m/s"
+        ds["groupspeed_per_freq"].attrs["units"] = "m/s"
         ds.attrs["description"] = (
             "Energy density from SWAN calculations, per 10 minutes"
         )
