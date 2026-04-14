@@ -24,7 +24,7 @@ sys.path.append(
 )
 from swanToolBox import (
     SWANModelSetup,
-    run_simulation_cluster,
+#    run_simulation_cluster,
     write_sp2,
     create_wind_nc,
 )
@@ -80,6 +80,12 @@ offshore_wave_dir_list = [270.0]
 offshore_dspr_list = [20]  #!wat doen we hiermee?
 bathy_list = ["constantBed"]
 time_series_list = ["A"]  # ["A", "B", "C", "D", "E", "F"]
+################# swell
+
+offshore_swell_wave_height_list = [0.5, 1.0, 1.5]
+offshore_swell_peak_period_list = [10, 15, 20]
+offshore_swell_wave_dir_list = [270.0, 315, 360, 45, 90]
+offshore_swell_dspr_list = [10]  #!wat doen we hiermee?
 
 # !! toevoegen initial in swan input file, dan kan runup time korter!
 
@@ -92,7 +98,8 @@ overwrite = True
 wind_constant = True
 ## constant or time varying wave conditions
 par_constant = False
-
+## forcing based on wave parameters or 2D spectrum
+forcing_2D_spec = True
 ###############################################################################
 ## make combinations
 ###############################################################################
@@ -105,6 +112,10 @@ comb = [
     offshore_wave_dir_list,
     offshore_dspr_list,
     time_series_list,
+    offshore_swell_wave_height_list,
+    offshore_swell_peak_period_list,
+    offshore_swell_wave_dir_list,
+    offshore_swell_dspr_list
 ]
 combinations = list(itertools.product(*comb))
 
@@ -152,6 +163,10 @@ for ii, item in enumerate(combinations):
     offshore_wave_dir = item[5]
     offshore_dspr = item[6]
     time_series = item[7]
+    offshore_swell_wave_height = item[8]
+    offshore_swell_peak_period = item[9]
+    offshore_swell_wave_dir = item[10]
+    offshore_swell_dspr = item[11]
 
     ## requirements
     steepness = offshore_wave_height / (9.81 * offshore_peak_period**2 / (2 * np.pi))
@@ -195,7 +210,13 @@ for ii, item in enumerate(combinations):
     #     )
     #     continue
 
-    sim_name = "{}_{}_u={:2.2f}Du={:03.0f}Hm0={:2.2f}Tp={:2.2f}Dw={:03.0f}Dspr={:2.0f}".format(
+    offshore_swell_wave_height = item[8]
+    offshore_swell_peak_period = item[9]
+    offshore_swell_wave_dir = item[10]
+    offshore_swell_dspr = item[11]
+
+
+    sim_name = "{}_{}_u={:2.2f}Du={:03.0f}Hm0={:2.2f}Tp={:2.2f}Dw={:03.0f}Dspr={:2.0f}_HE10{:2.2f}_Tp2{:2.2f}_Dir2{:2.2f}_Dspr2={:2.2f}".format(
         bathy,
         time_series,
         wind,
@@ -205,6 +226,10 @@ for ii, item in enumerate(combinations):
         Decimal(offshore_wave_dir).to_integral_value(ROUND_HALF_UP),
         offshore_dspr,
         # xresolution,
+        offshore_swell_wave_height,
+        offshore_swell_peak_period,
+        Decimal(offshore_swell_wave_dir).to_integral_value(ROUND_HALF_UP),
+        offshore_swell_dspr
     )
     if os.path.exists(os.path.join(model_path, sim_name)) and overwrite:
         print(
@@ -225,6 +250,10 @@ for ii, item in enumerate(combinations):
         "Directional spreading           : {:2.2f}".format(offshore_dspr),
         "Time series                     : {}".format(time_series),
         "Bathy                           : {}".format(bathy),
+        "Swell wave height               : {:2.2f}".format(offshore_swell_wave_height),
+        "Swell wave period               : {:2.2f}".format(offshore_swell_peak_period),
+        "Swell wave direction            : {:2.2f}".format(offshore_swell_wave_dir),
+        "Swell directional spreading     : {:2.2f}".format(offshore_swell_dspr),
     ]
 
     meta_string = "\n".join("!** " + line for line in lines)
@@ -327,108 +356,119 @@ for ii, item in enumerate(combinations):
     ## get boundary conditions
     ###############################################################################
     ## add constant values for spinup!
-
-    date_series = [
-        datetime(2025, 1, 1, 0, 0) + timedelta(minutes=i * dt_minutes)
-        for i in range(
-            int(
-                (end_time_sims + spinup_time - start_time_sims).total_seconds()
-                / 60
-                / dt_minutes
+    if not forcing_2D_spec:
+        date_series = [
+            datetime(2025, 1, 1, 0, 0) + timedelta(minutes=i * dt_minutes)
+            for i in range(
+                int(
+                    (end_time_sims + spinup_time - start_time_sims).total_seconds()
+                    / 60
+                    / dt_minutes
+                )
+                + 1
             )
-            + 1
-        )
-    ]
-    if par_constant:
-        Hm0_series = np.ones(len(date_series)) * offshore_wave_height  ## timeseries
-        Tp_series = np.ones(len(date_series)) * offshore_peak_period
-        Dir_series = np.ones(len(date_series)) * offshore_wave_dir
-        Dspr_series = np.ones(len(date_series)) * offshore_dspr
-    else:
-        # timeseries = np.loadtxt(os.path.join('series','serie_'+time_series+ '.txt'))
+        ]
+        if par_constant:
+            Hm0_series = np.ones(len(date_series)) * offshore_wave_height  ## timeseries
+            Tp_series = np.ones(len(date_series)) * offshore_peak_period
+            Dir_series = np.ones(len(date_series)) * offshore_wave_dir
+            Dspr_series = np.ones(len(date_series)) * offshore_dspr
+        else:
+            # timeseries = np.loadtxt(os.path.join('series','serie_'+time_series+ '.txt'))
 
-        timeseries = xr.open_dataset(
-            os.path.join(
-                "series", "SIMPLE_HKNA_segment_MeanNorm_" + time_series + ".nc"
-            )
-        )
-        maxnorm_timeseries = xr.open_dataset(
-            os.path.join("series", "SIMPLE_HKNA_segment_MaxNorm_" + time_series + ".nc")
-        )
-
-        Hm0_series = timeseries.Hm0.values * offshore_wave_height
-
-        # if offshore_peak_period >= 15:
-        # Tp_series = maxnorm_timeseries.Tp.values * offshore_peak_period
-        # else:
-        Tp_series = timeseries.Tp.values * offshore_peak_period
-        Tp_series[Tp_series > 20] = 20  ## cap max period to 20s
-        print("any periods above 20s?", (Tp_series > 20).any())
-
-        ax1.plot(Hm0_series, Tp_series, ".")
-        steepness_series = Hm0_series / ((9.81 * Tp_series**2) / (2 * np.pi))
-        ax2.plot(Hm0_series, steepness_series, ".")
-        ax3.plot(Tp_series, steepness_series, ".")
-        ## check max steepness in series
-        if (steepness_series > max_steepness_series).any():
-            filter_steepness = np.where(
-                (steepness_series > max_steepness_series)
-                & ((Hm0_series > 0.1) | (Tp_series > 1))
-            )
-            temp_Hm0 = Hm0_series[filter_steepness]
-            temp_tp = np.sqrt(temp_Hm0 / max_steepness_series * (2 * np.pi) / 9.81)
-
-            Tp_series[filter_steepness] = temp_tp
-            print(
-                "Adjusting max steepness in time series for Hm0 values {} with Tp values {}".format(
-                    temp_Hm0, temp_tp
+            timeseries = xr.open_dataset(
+                os.path.join(
+                    "series", "SIMPLE_HKNA_segment_MeanNorm_" + time_series + ".nc"
                 )
             )
-        new_steepness_series = Hm0_series / ((9.81 * Tp_series**2) / (2 * np.pi))
-        ax4.plot(steepness_series, new_steepness_series, ".")
+            maxnorm_timeseries = xr.open_dataset(
+                os.path.join("series", "SIMPLE_HKNA_segment_MaxNorm_" + time_series + ".nc")
+            )
 
-        ## make sure no negative values
-        Hm0_series[Hm0_series < 0] = 0
-        Tp_series[Tp_series < 0] = 0
-        Dir_series = timeseries.Mdir.values * offshore_wave_dir
-        Dspr_series = (
-            np.ones(len(Hm0_series)) * offshore_dspr
-        )  ## constant Dspr. ##TODO: could also be timeseries
+            Hm0_series = timeseries.Hm0.values * offshore_wave_height
 
-        ## add spinup time to array
-        spinup_serie = np.ones(int(spinup_time.total_seconds() / 60 / dt_minutes))
-        Hm0_series = np.concatenate((spinup_serie * Hm0_series[0], Hm0_series))
-        Tp_series = np.concatenate((spinup_serie * Tp_series[0], Tp_series))
-        Dir_series = np.concatenate((spinup_serie * Dir_series[0], Dir_series))
-        Dspr_series = np.concatenate((spinup_serie * Dspr_series[0], Dspr_series))
+            # if offshore_peak_period >= 15:
+            # Tp_series = maxnorm_timeseries.Tp.values * offshore_peak_period
+            # else:
+            Tp_series = timeseries.Tp.values * offshore_peak_period
+            Tp_series[Tp_series > 20] = 20  ## cap max period to 20s
+            print("any periods above 20s?", (Tp_series > 20).any())
 
-    plt.figure(figsize=(10, 10), layout="constrained")
-    plt.subplot(4, 1, 1)
-    plt.plot(date_series, Hm0_series, label="Hm0")
-    plt.ylabel("$H_{m0}$")
-    plt.subplot(4, 1, 2)
-    plt.plot(date_series, Tp_series, label="Tp")
-    plt.ylabel("$T_{p}$")
-    plt.subplot(4, 1, 3)
-    plt.plot(date_series, Dir_series, label="Hm0")
-    plt.ylabel(r"$\theta_m$")
-    plt.subplot(4, 1, 4)
-    plt.plot(date_series, Dspr_series, label="Hm0")
-    plt.ylabel(r"$D_{spr}$")
-    plt.savefig(os.path.join(model_path, sim_name, "wave.png"))
+            ax1.plot(Hm0_series, Tp_series, ".")
+            steepness_series = Hm0_series / ((9.81 * Tp_series**2) / (2 * np.pi))
+            ax2.plot(Hm0_series, steepness_series, ".")
+            ax3.plot(Tp_series, steepness_series, ".")
+            ## check max steepness in series
+            if (steepness_series > max_steepness_series).any():
+                filter_steepness = np.where(
+                    (steepness_series > max_steepness_series)
+                    & ((Hm0_series > 0.1) | (Tp_series > 1))
+                )
+                temp_Hm0 = Hm0_series[filter_steepness]
+                temp_tp = np.sqrt(temp_Hm0 / max_steepness_series * (2 * np.pi) / 9.81)
 
-    swan.set_bc(
-        type="par",
-        boundary_side="WEST",
-        bc_file=os.path.join(model_path, sim_name, "wave.par"),
-        dspr_setting="DEGREES",
-        initial=True,
-        Hm0_series=Hm0_series,
-        Tp_series=Tp_series,
-        Dir_series=Dir_series,
-        Dspr_series=Dspr_series,
-        date_series=date_series,
-    )
+                Tp_series[filter_steepness] = temp_tp
+                print(
+                    "Adjusting max steepness in time series for Hm0 values {} with Tp values {}".format(
+                        temp_Hm0, temp_tp
+                    )
+                )
+            new_steepness_series = Hm0_series / ((9.81 * Tp_series**2) / (2 * np.pi))
+            ax4.plot(steepness_series, new_steepness_series, ".")
+
+            ## make sure no negative values
+            Hm0_series[Hm0_series < 0] = 0
+            Tp_series[Tp_series < 0] = 0
+            Dir_series = timeseries.Mdir.values * offshore_wave_dir
+            Dspr_series = (
+                np.ones(len(Hm0_series)) * offshore_dspr
+            )  ## constant Dspr. ##TODO: could also be timeseries
+
+            ## add spinup time to array
+            spinup_serie = np.ones(int(spinup_time.total_seconds() / 60 / dt_minutes))
+            Hm0_series = np.concatenate((spinup_serie * Hm0_series[0], Hm0_series))
+            Tp_series = np.concatenate((spinup_serie * Tp_series[0], Tp_series))
+            Dir_series = np.concatenate((spinup_serie * Dir_series[0], Dir_series))
+            Dspr_series = np.concatenate((spinup_serie * Dspr_series[0], Dspr_series))
+
+        plt.figure(figsize=(10, 10), layout="constrained")
+        plt.subplot(4, 1, 1)
+        plt.plot(date_series, Hm0_series, label="Hm0")
+        plt.ylabel("$H_{m0}$")
+        plt.subplot(4, 1, 2)
+        plt.plot(date_series, Tp_series, label="Tp")
+        plt.ylabel("$T_{p}$")
+        plt.subplot(4, 1, 3)
+        plt.plot(date_series, Dir_series, label="Hm0")
+        plt.ylabel(r"$\theta_m$")
+        plt.subplot(4, 1, 4)
+        plt.plot(date_series, Dspr_series, label="Hm0")
+        plt.ylabel(r"$D_{spr}$")
+        plt.savefig(os.path.join(model_path, sim_name, "wave.png"))
+
+        swan.set_bc(
+            type="par",
+            boundary_side="WEST",
+            bc_file=os.path.join(model_path, sim_name, "wave.par"),
+            dspr_setting="DEGREES",
+            initial=True,
+            Hm0_series=Hm0_series,
+            Tp_series=Tp_series,
+            Dir_series=Dir_series,
+            Dspr_series=Dspr_series,
+            date_series=date_series,
+        )
+    else:
+
+        spec_file = '{}_Hm0{:2.2f}_Tp1{:2.2f}_Dir1{:2.2f}_Dspr1={:2.2f}_HE10{:2.2f}_Tp2{}_dir2{:2.2f}_Dspr2={:2.2f}'.format(time_series,offshore_wave_height,offshore_peak_period,offshore_wave_dir,offshore_dspr,offshore_swell_wave_height,offshore_swell_peak_period,offshore_swell_wave_dir,offshore_swell_dspr)
+        swan.set_bc(
+            type="nest",
+            boundary_side="WEST",
+            bc_path=os.path.join(model_path, sim_name, spec_file + '.bnd'),
+        )
+
+
+
 
     ##################################################################
     ## set forcings (1. current)
@@ -590,6 +630,24 @@ for ii, item in enumerate(combinations):
                 ),
             ]
         )
+
+    # extra drone points near boundary. 
+    Noutput_bc = 10
+    dy_output_bc = ylenc / Noutput_bc
+    for i in range(Noutput_bc-1):
+        x_loc = 100
+        y_loc = (i+1) * dy_output_bc
+        coordinates.extend(
+            [
+                (
+                    x_loc,
+                    y_loc,
+                    "line of output points at x={:2.1f} m".format(x_loc),
+                ),
+            ]
+        )
+
+
 
     # Write to a text file
     output_location = "points.PNT"
