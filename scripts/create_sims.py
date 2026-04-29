@@ -24,11 +24,10 @@ sys.path.append(
 )
 from swanToolBox import (
     SWANModelSetup,
-#    run_simulation_cluster,
+    #    run_simulation_cluster,
     write_sp2,
     create_wind_nc,
 )
-
 
 ###############################################################################
 ## user inputs
@@ -72,14 +71,16 @@ dir_res = 72
 domain_length = 30  # length of the domain in km
 
 ## variations
-wind_list = [0]  # [0, 5, 10, 15, 20] ### match with wave height if also using seperate swell forcing
+wind_list = [
+    0
+]  # [0, 5, 10, 15, 20] ### match with wave height if also using seperate swell forcing
 wind_dir_list = [270]
 offshore_wave_height_list = [0.5, 1.0, 1.5]  # [0.0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0]
 offshore_peak_period_list = [5.0, 7.5]  # [5.0, 7.5, 10.0, 12.5, 15, 17.5, 20]
 offshore_wave_dir_list = [270.0]
 offshore_dspr_list = [20]  #!wat doen we hiermee?
 bathy_list = ["constantBed"]
-time_series_list = ["A", "D"]  ! weer B en C of doen we hier juist andere dan bij basis dataset # ["A", "B", "C", "D", "E", "F"] 
+time_series_list = ["D", "E"]  # ["A", "B", "C", "D", "E", "F"]
 
 ################# swell
 offshore_swell_wave_height_list = [0.5, 1.0, 1.5]
@@ -115,7 +116,7 @@ comb = [
     offshore_swell_wave_height_list,
     offshore_swell_peak_period_list,
     offshore_swell_wave_dir_list,
-    offshore_swell_dspr_list
+    offshore_swell_dspr_list,
 ]
 combinations = list(itertools.product(*comb))
 
@@ -169,15 +170,14 @@ for ii, item in enumerate(combinations):
     offshore_swell_dspr = item[11]
 
     if forcing_2D_spec:
-        if offshore_wave_height == 0.5: #m
-            wind = 4 #m/s
+        if offshore_wave_height == 0.5:  # m
+            wind = 4  # m/s
         elif offshore_wave_height == 1.0:
-            wind = 6 #m/s
+            wind = 6  # m/s
         elif offshore_wave_height == 1.5:
-            wind = 8 #m/s
+            wind = 8  # m/s
         elif offshore_wave_height == 2.0:
-            wind = 10 #m/s   
-
+            wind = 10  # m/s
 
     ## requirements
     steepness = offshore_wave_height / (9.81 * offshore_peak_period**2 / (2 * np.pi))
@@ -221,7 +221,6 @@ for ii, item in enumerate(combinations):
     #     )
     #     continue
 
-
     sim_name = "{}_{}_u={:2.2f}Du={:03.0f}Hm0={:2.2f}Tp={:2.2f}Dw={:03.0f}Dspr={:2.0f}_HE10{:2.2f}_Tp2{:2.2f}_Dir2{:2.2f}_Dspr2={:2.2f}".format(
         bathy,
         time_series,
@@ -235,7 +234,7 @@ for ii, item in enumerate(combinations):
         offshore_swell_wave_height,
         offshore_swell_peak_period,
         Decimal(offshore_swell_wave_dir).to_integral_value(ROUND_HALF_UP),
-        offshore_swell_dspr
+        offshore_swell_dspr,
     )
     if os.path.exists(os.path.join(model_path, sim_name)) and overwrite:
         print(
@@ -267,7 +266,7 @@ for ii, item in enumerate(combinations):
     ###############################################################################
     ## define swan model setup
     ###############################################################################
-    swan = SWANModelSetup(sim_name, template_path=template_path)
+    swan = SWANModelSetup(model_path, sim_name, template_path=template_path)
 
     swan.set_cluster(partition, runtime)
 
@@ -296,7 +295,7 @@ for ii, item in enumerate(combinations):
     alpc = 0
     # length of the domain in km
     xlenc = domain_length * 1000  # convert to meters
-    ylenc = domain_length * 1000 * 2 # convert to meters
+    ylenc = domain_length * 1000 * 2  # convert to meters
     ## origin
     xpc = 0
     ypc = 0
@@ -467,15 +466,26 @@ for ii, item in enumerate(combinations):
         )
     else:
 
-        spec_file = '{}_Hm0={:2.2f}_Tp1={:2.2f}_Dir1={:2.2f}_Dspr1={:2.2f}_HE10={:2.2f}_Tp2={}_dir2={:2.2f}_Dspr2={:2.2f}'.format(time_series,offshore_wave_height,offshore_peak_period,offshore_wave_dir,offshore_dspr,offshore_swell_wave_height,offshore_swell_peak_period,offshore_swell_wave_dir,offshore_swell_dspr)
+        spec_file = "{}_Hm0={:2.2f}_Tp1={:2.2f}_Dir1={:2.2f}_Dspr1={:2.2f}_HE10={:2.2f}_Tp2={}_dir2={:2.2f}_Dspr2={:2.2f}".format(
+            time_series,
+            offshore_wave_height,
+            offshore_peak_period,
+            offshore_wave_dir,
+            offshore_dspr,
+            offshore_swell_wave_height,
+            offshore_swell_peak_period,
+            offshore_swell_wave_dir,
+            offshore_swell_dspr,
+        )
         swan.set_bc(
             type="nest",
             boundary_side="WEST",
-            bc_path=os.path.join(model_path, sim_name, spec_file + '.bnd'),
+            bc_path=os.path.join(model_path, sim_name, spec_file + ".bnd"),
+            bc_file=os.path.join(
+                r"p:\11211806-aquafind\WP7\SWAN\04_production\02_scripts\spec_series",
+                spec_file + ".sp2",
+            ),
         )
-
-
-
 
     ##################################################################
     ## set forcings (1. current)
@@ -637,12 +647,12 @@ for ii, item in enumerate(combinations):
             ]
         )
 
-    # extra drone points near boundary. 
+    # extra drone points near boundary.
     Noutput_bc = 10
     dy_output_bc = ylenc / Noutput_bc
-    for i in range(Noutput_bc-1):
+    for i in range(Noutput_bc - 1):
         x_loc = 100
-        y_loc = (i+1) * dy_output_bc
+        y_loc = (i + 1) * dy_output_bc
         coordinates.extend(
             [
                 (
@@ -652,9 +662,9 @@ for ii, item in enumerate(combinations):
                 ),
             ]
         )
-    for i in range(Noutput_bc-1):
+    for i in range(Noutput_bc - 1):
         x_loc = 29900
-        y_loc = (i+1) * dy_output_bc
+        y_loc = (i + 1) * dy_output_bc
         coordinates.extend(
             [
                 (
@@ -665,8 +675,8 @@ for ii, item in enumerate(combinations):
             ]
         )
     dx_output_bc = xlenc / Noutput_bc
-    for i in range(Noutput_bc-1):
-        x_loc = (i+1) * dx_output_bc
+    for i in range(Noutput_bc - 1):
+        x_loc = (i + 1) * dx_output_bc
         y_loc = 59900
         coordinates.extend(
             [
@@ -677,7 +687,6 @@ for ii, item in enumerate(combinations):
                 ),
             ]
         )
-
 
     # Write to a text file
     output_location = "points.PNT"
@@ -735,7 +744,7 @@ for ii, item in enumerate(combinations):
     #######################################################################
     ## write model
     #######################################################################
-    swan.create_model(model_path)
+    swan.create_model()
 
     swan_setup_list.append(os.path.join(sim_name))
     #######################################################################
