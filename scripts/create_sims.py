@@ -72,16 +72,16 @@ dir_res = 72
 domain_length = 30  # length of the domain in km
 
 ## variations
-wind_list = [0, 5]  # [0, 5, 10, 15, 20]
+wind_list = [0]  # [0, 5, 10, 15, 20] ### match with wave height if also using seperate swell forcing
 wind_dir_list = [270]
-offshore_wave_height_list = [3]  # [0.0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0]
-offshore_peak_period_list = [10]  # [5.0, 7.5, 10.0, 12.5, 15, 17.5, 20]
+offshore_wave_height_list = [0.5, 1.0, 1.5]  # [0.0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0]
+offshore_peak_period_list = [5.0, 7.5]  # [5.0, 7.5, 10.0, 12.5, 15, 17.5, 20]
 offshore_wave_dir_list = [270.0]
 offshore_dspr_list = [20]  #!wat doen we hiermee?
 bathy_list = ["constantBed"]
-time_series_list = ["A"]  # ["A", "B", "C", "D", "E", "F"]
-################# swell
+time_series_list = ["A", "D"]  ! weer B en C of doen we hier juist andere dan bij basis dataset # ["A", "B", "C", "D", "E", "F"] 
 
+################# swell
 offshore_swell_wave_height_list = [0.5, 1.0, 1.5]
 offshore_swell_peak_period_list = [10, 15, 20]
 offshore_swell_wave_dir_list = [270.0, 315, 360, 45, 90]
@@ -168,9 +168,20 @@ for ii, item in enumerate(combinations):
     offshore_swell_wave_dir = item[10]
     offshore_swell_dspr = item[11]
 
+    if forcing_2D_spec:
+        if offshore_wave_height == 0.5: #m
+            wind = 4 #m/s
+        elif offshore_wave_height == 1.0:
+            wind = 6 #m/s
+        elif offshore_wave_height == 1.5:
+            wind = 8 #m/s
+        elif offshore_wave_height == 2.0:
+            wind = 10 #m/s   
+
+
     ## requirements
     steepness = offshore_wave_height / (9.81 * offshore_peak_period**2 / (2 * np.pi))
-    print("steepness is {}".format(steepness))
+    # print("steepness is {}".format(steepness))
     if steepness > max_steepness:
         print(
             "Skipping steepness {:2.3f} for Hm0={:2.2f} Tp={:2.2f}".format(
@@ -209,11 +220,6 @@ for ii, item in enumerate(combinations):
     #         )
     #     )
     #     continue
-
-    offshore_swell_wave_height = item[8]
-    offshore_swell_peak_period = item[9]
-    offshore_swell_wave_dir = item[10]
-    offshore_swell_dspr = item[11]
 
 
     sim_name = "{}_{}_u={:2.2f}Du={:03.0f}Hm0={:2.2f}Tp={:2.2f}Dw={:03.0f}Dspr={:2.0f}_HE10{:2.2f}_Tp2{:2.2f}_Dir2{:2.2f}_Dspr2={:2.2f}".format(
@@ -290,7 +296,7 @@ for ii, item in enumerate(combinations):
     alpc = 0
     # length of the domain in km
     xlenc = domain_length * 1000  # convert to meters
-    ylenc = domain_length * 1000  # convert to meters
+    ylenc = domain_length * 1000 * 2 # convert to meters
     ## origin
     xpc = 0
     ypc = 0
@@ -322,8 +328,8 @@ for ii, item in enumerate(combinations):
         mxinp = 200
         myinp = 200
         bathy = np.ones((mxinp + 1, myinp + 1)) * depth
-        dxinp = xlenc / (mxinp + 1)
-        dyinp = ylenc / (myinp + 1)
+        dxinp = xlenc / (mxinp)
+        dyinp = ylenc / (myinp)
 
         sim_name_bathymetry = "constant_bathy"
 
@@ -381,9 +387,9 @@ for ii, item in enumerate(combinations):
                     "series", "SIMPLE_HKNA_segment_MeanNorm_" + time_series + ".nc"
                 )
             )
-            maxnorm_timeseries = xr.open_dataset(
-                os.path.join("series", "SIMPLE_HKNA_segment_MaxNorm_" + time_series + ".nc")
-            )
+            # maxnorm_timeseries = xr.open_dataset(
+            #     os.path.join("series", "SIMPLE_HKNA_segment_MaxNorm_" + time_series + ".nc")
+            # )
 
             Hm0_series = timeseries.Hm0.values * offshore_wave_height
 
@@ -392,8 +398,8 @@ for ii, item in enumerate(combinations):
             # else:
             Tp_series = timeseries.Tp.values * offshore_peak_period
             Tp_series[Tp_series > 20] = 20  ## cap max period to 20s
-            print("any periods above 20s?", (Tp_series > 20).any())
-
+            if (Tp_series > 20).any():
+                print("any periods above 20s?", (Tp_series > 20).any())
             ax1.plot(Hm0_series, Tp_series, ".")
             steepness_series = Hm0_series / ((9.81 * Tp_series**2) / (2 * np.pi))
             ax2.plot(Hm0_series, steepness_series, ".")
@@ -445,6 +451,7 @@ for ii, item in enumerate(combinations):
         plt.plot(date_series, Dspr_series, label="Hm0")
         plt.ylabel(r"$D_{spr}$")
         plt.savefig(os.path.join(model_path, sim_name, "wave.png"))
+        plt.close()
 
         swan.set_bc(
             type="par",
@@ -460,7 +467,7 @@ for ii, item in enumerate(combinations):
         )
     else:
 
-        spec_file = '{}_Hm0{:2.2f}_Tp1{:2.2f}_Dir1{:2.2f}_Dspr1={:2.2f}_HE10{:2.2f}_Tp2{}_dir2{:2.2f}_Dspr2={:2.2f}'.format(time_series,offshore_wave_height,offshore_peak_period,offshore_wave_dir,offshore_dspr,offshore_swell_wave_height,offshore_swell_peak_period,offshore_swell_wave_dir,offshore_swell_dspr)
+        spec_file = '{}_Hm0={:2.2f}_Tp1={:2.2f}_Dir1={:2.2f}_Dspr1={:2.2f}_HE10={:2.2f}_Tp2={}_dir2={:2.2f}_Dspr2={:2.2f}'.format(time_series,offshore_wave_height,offshore_peak_period,offshore_wave_dir,offshore_dspr,offshore_swell_wave_height,offshore_swell_peak_period,offshore_swell_wave_dir,offshore_swell_dspr)
         swan.set_bc(
             type="nest",
             boundary_side="WEST",
@@ -582,8 +589,7 @@ for ii, item in enumerate(combinations):
     ## set output
     #######################################################################
 
-    output_x = domain_length * 1000
-    output_y = domain_length * 1000 / 2  # Place input buoy at the center of the domain
+    output_y = ylenc / 2  # Place input buoy at the center of the domain
 
     # create line with output points in centre of domain
     Noutput = 30
@@ -646,7 +652,31 @@ for ii, item in enumerate(combinations):
                 ),
             ]
         )
-
+    for i in range(Noutput_bc-1):
+        x_loc = 29900
+        y_loc = (i+1) * dy_output_bc
+        coordinates.extend(
+            [
+                (
+                    x_loc,
+                    y_loc,
+                    "line of output points at x={:2.1f} m".format(x_loc),
+                ),
+            ]
+        )
+    dx_output_bc = xlenc / Noutput_bc
+    for i in range(Noutput_bc-1):
+        x_loc = (i+1) * dx_output_bc
+        y_loc = 59900
+        coordinates.extend(
+            [
+                (
+                    x_loc,
+                    y_loc,
+                    "line of output points at y={:2.1f} m".format(y_loc),
+                ),
+            ]
+        )
 
 
     # Write to a text file
