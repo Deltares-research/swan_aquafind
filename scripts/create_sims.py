@@ -479,12 +479,8 @@ for ii, item in enumerate(combinations):
         )
         swan.set_bc(
             type="nest",
-            boundary_side="WEST",
-            bc_path=os.path.join(model_path, sim_name, spec_file + ".bnd"),
-            bc_file=os.path.join(
-                r"p:\11211806-aquafind\WP7\SWAN\04_production\02_scripts\spec_series",
-                spec_file + ".sp2",
-            ),
+            bc_path=spec_file + ".bnd",
+            bc_file=os.path.join(r"p:\11211806-aquafind\WP7\SWAN\04_production\02_scripts\spec_series",spec_file + ".sp2")
         )
 
     ##################################################################
