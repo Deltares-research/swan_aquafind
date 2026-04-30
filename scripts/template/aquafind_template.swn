@@ -81,8 +81,10 @@ wind drag ${'%s' % winddrag}
 INCLUDE '${'%s' % obstacles_path}'
 % endif
 !************************************* BOUNDARY CONDITIONS **************************************
-% if bc_type=='specsidefile':
-BOUNDSPEC SIDE ${'%s' % boundary_side} CCW CONSTANT FILE '${'%s' % bc_path}'
+% if bc_type == 'specsidefile':
+% for side, path in zip(boundary_side, bc_path):
+BOUNDSPEC SIDE ${side} CCW CONSTANT FILE '${path}'
+% endfor
 % endif
 
 % if bc_type=='nest':
