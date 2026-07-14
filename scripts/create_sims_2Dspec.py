@@ -215,10 +215,10 @@ for ii, item in enumerate(combinations):
     offshore_wave_dir = item[5]
     offshore_dspr = item[6]
     #time_series = item[7]
-    offshore_swell_wave_height = item[6]
-    offshore_swell_peak_period = item[7]
-    offshore_swell_wave_dir = item[8]
-    offshore_swell_dspr = item[9]
+    offshore_swell_wave_height = item[7]
+    offshore_swell_peak_period = item[8]
+    offshore_swell_wave_dir = item[9]
+    offshore_swell_dspr = item[10]
 
     if forcing_2D_spec:
         if offshore_wave_height == 0.5:  # m
