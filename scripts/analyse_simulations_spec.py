@@ -51,7 +51,6 @@ fig_path = ""
 
 ## settings
 analyse_map = True
-
 analyse_points = True
 spec_output = True
 write_netCDF = True
@@ -792,6 +791,10 @@ try:
                     "mean_offshore_peak_period": offshore_peak_period,
                     "mean_offshore_wave_direction": offshore_wave_dir,
                     "mean_offshore_dspr": offshore_dspr,
+                    "offshore_swell_wave_height": offshore_swell_wave_height,
+                    "offshore_swell_peak_period": offshore_swell_peak_period,
+                    "offshore_swell_wave_direction": offshore_swell_wave_dir,
+                    "offshore_swell_dspr": offshore_swell_dspr,
                     "water_depth": (
                         ("points"),
                         depth * np.ones((len(swan_spec.x[index_loc_spec]),)),
@@ -848,9 +851,9 @@ try:
         ds["energy_density"].attrs["long_name"] = "Energy Density"
         ds["wind_speed"].attrs["units"] = "m/s"
         ds["wind_direction"].attrs["units"] = "degrees from north (clockwise positive)"
-        ds["distance_30min"].attrs[
-            "description"
-        ] = "Distance wave with peak period travels in 30 minutes based on group speed in deep water"
+        #ds["distance_30min"].attrs[
+        #    "description"
+        #] = "Distance wave with peak period travels in 30 minutes based on group speed in deep water"
         ds["groupspeed_at_peakperiod"].attrs["units"] = "m/s"
         ds["groupspeed_per_freq"].attrs["units"] = "m/s"
         ds.attrs["description"] = (

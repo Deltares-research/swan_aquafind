@@ -279,10 +279,11 @@ for ii, item in enumerate(combinations):
     #     continue
 
     if forcing_2D_spec:
+        spec_file = ''
         # look for the right spec file based on the parameters
         for filename in os.listdir(r"p:\11211806-aquafind\WP7\SWAN\04_production\02_scripts\spec_series"):
             if filename.endswith(".sp2"):
-                if "_Hm0ww={:.3g}_Tpww={:.3g}_Dirww={:.3g}_Dsprww={:.3g}_Hm0sw={:.3g}_Tpsw={:.3g}_dirsw={:.3g}_Dsprsw={:.3g}".format(
+                name = "_Hm0ww={:.3g}_Tpww={:.3g}_Dirww={:.3g}_Dsprww={:.3g}_Hm0sw={:.3g}_Tpsw={:.3g}_dirsw={:.3g}_Dsprsw={:.3g}".format(
                     offshore_wave_height,
                     offshore_peak_period,
                     offshore_wave_dir,
@@ -291,7 +292,8 @@ for ii, item in enumerate(combinations):
                     offshore_swell_peak_period,
                     offshore_swell_wave_dir,
                     offshore_swell_dspr,
-                    ) and bathy in filename:
+                    )
+                if name in filename and bathy in filename:
                     spec_file = filename[:-4]  # remove the .sp2 extension
 
 
