@@ -69,7 +69,7 @@ fhigh = 0.5
 dir_res = 72
 
 ## domain
-domain_length = 30  # length of the domain in km
+domain_length = 40  # length of the domain in km
 
 # ## base dataset variations
 # wind_list = [0, 5, 10, 15, 20]
@@ -669,7 +669,7 @@ for ii, item in enumerate(combinations):
     output_y = ylenc / 2  # Place input buoy at the center of the domain
 
     # create line with output points in centre of domain
-    Noutput = 30
+    Noutput = 40
     dx_output = domain_length * 1000 / Noutput
     coordinates = []
     for i in range(Noutput):
@@ -684,10 +684,10 @@ for ii, item in enumerate(combinations):
             ]
         )
 
-    # create second line with output points north of the centre line
+    # create second line with output points north of the centre line (9936m from the centre line)
     Noutput_NS = 10
     dx_output_NS = domain_length * 1000 / Noutput_NS
-    output_y_N = output_y + output_y / 2
+    output_y_N = output_y + 9936
 
     for i in range(Noutput_NS):
         x_loc = i * dx_output_NS
@@ -700,8 +700,8 @@ for ii, item in enumerate(combinations):
                 ),
             ]
         )
-    # create second line with output points south of the centre line
-    output_y_S = output_y - output_y / 2
+    # create second line with output points north of the centre line (14051m from the centre line)
+    output_y_S = output_y +14051
     for i in range(Noutput_NS):
         x_loc = i * dx_output_NS
         coordinates.extend(
@@ -713,47 +713,98 @@ for ii, item in enumerate(combinations):
                 ),
             ]
         )
-
-    # extra drone points near boundary.
-    Noutput_bc = 10
-    dy_output_bc = ylenc / Noutput_bc
-    for i in range(Noutput_bc - 1):
-        x_loc = 100
-        y_loc = (i + 1) * dy_output_bc
+    # create second line with output points north of the centre line (14904m from the centre line)
+    output_y_S = output_y +14904
+    for i in range(Noutput_NS):
+        x_loc = i * dx_output_NS
         coordinates.extend(
             [
                 (
                     x_loc,
-                    y_loc,
-                    "line of output points at x={:2.1f} m".format(x_loc),
+                    output_y_S,
+                    "line of output points at y={:2.1f} m".format(output_y_S),
                 ),
             ]
         )
-    for i in range(Noutput_bc - 1):
-        x_loc = 29900
-        y_loc = (i + 1) * dy_output_bc
+    # create second line with output points north of the centre line (21077m from the centre line)
+    output_y_S = output_y +21077
+    for i in range(Noutput_NS):
+        x_loc = i * dx_output_NS
         coordinates.extend(
             [
                 (
                     x_loc,
-                    y_loc,
-                    "line of output points at x={:2.1f} m".format(x_loc),
+                    output_y_S,
+                    "line of output points at y={:2.1f} m".format(output_y_S),
                 ),
             ]
         )
-    dx_output_bc = xlenc / Noutput_bc
-    for i in range(Noutput_bc - 1):
-        x_loc = (i + 1) * dx_output_bc
-        y_loc = 59900
+    # create second line with output points north of the centre line (19872m from the centre line)
+    output_y_S = output_y +19872
+    for i in range(Noutput_NS):
+        x_loc = i * dx_output_NS
         coordinates.extend(
             [
                 (
                     x_loc,
-                    y_loc,
-                    "line of output points at y={:2.1f} m".format(y_loc),
+                    output_y_S,
+                    "line of output points at y={:2.1f} m".format(output_y_S),
                 ),
             ]
         )
+    # create second line with output points north of the centre line (28103m from the centre line)
+    output_y_S = output_y +28103
+    for i in range(Noutput_NS):
+        x_loc = i * dx_output_NS
+        coordinates.extend(
+            [
+                (
+                    x_loc,
+                    output_y_S,
+                    "line of output points at y={:2.1f} m".format(output_y_S),
+                ),
+            ]
+        )
+    # # extra drone points near boundary.
+    # Noutput_bc = 10
+    # dy_output_bc = ylenc / Noutput_bc
+    # for i in range(Noutput_bc - 1):
+    #     x_loc = 100
+    #     y_loc = (i + 1) * dy_output_bc
+    #     coordinates.extend(
+    #         [
+    #             (
+    #                 x_loc,
+    #                 y_loc,
+    #                 "line of output points at x={:2.1f} m".format(x_loc),
+    #             ),
+    #         ]
+    #     )
+    # for i in range(Noutput_bc - 1):
+    #     x_loc = 29900
+    #     y_loc = (i + 1) * dy_output_bc
+    #     coordinates.extend(
+    #         [
+    #             (
+    #                 x_loc,
+    #                 y_loc,
+    #                 "line of output points at x={:2.1f} m".format(x_loc),
+    #             ),
+    #         ]
+    #     )
+    # dx_output_bc = xlenc / Noutput_bc
+    # for i in range(Noutput_bc - 1):
+    #     x_loc = (i + 1) * dx_output_bc
+    #     y_loc = 59900
+    #     coordinates.extend(
+    #         [
+    #             (
+    #                 x_loc,
+    #                 y_loc,
+    #                 "line of output points at y={:2.1f} m".format(y_loc),
+    #             ),
+    #         ]
+    #     )
 
     # Write to a text file
     output_location = "points.PNT"

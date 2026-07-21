@@ -76,8 +76,14 @@ match5 = re.search(r"Hm0=([\d.]+)", sim_name)
 offshore_wave_height = float(match5.group(1))
 match6 = re.search(r"Dspr=([\d.]+)", sim_name)
 offshore_dspr = float(match6.group(1))
-
-
+match7 = re.search(r"HE10=([\d.]+)", sim_name)
+offshore_swell_wave_height = float(match7.group(1))
+match8 = re.search(r"Tp2=([\d.]+)", sim_name)
+offshore_swell_peak_period = float(match8.group(1))
+match9 = re.search(r"Dir2=([\d.]+)", sim_name)
+offshore_swell_wave_dir = float(match9.group(1))
+match10 = re.search(r"Dspr2=([\d.]+)", sim_name)
+offshore_swell_dspr = float(match10.group(1))
 ###############################################################################
 ## helper functions
 ###############################################################################
