@@ -109,7 +109,7 @@ wind_list = [
     0
 ]  #!! koppelen aan golfhoogte via bretschneider, met fetch=lang (weinig tot geen windgroei)
 wind_dir_list = [270]
-offshore_wave_height_list = [1.0]
+offshore_wave_height_list = [1.5]
 offshore_peak_period_list = [7.5]
 offshore_wave_dir_list = [270.0]
 offshore_dspr_list = [20]  #!wat doen we hiermee?
@@ -685,7 +685,7 @@ for ii, item in enumerate(combinations):
         )
 
     # create second line with output points north of the centre line (9936m from the centre line)
-    Noutput_NS = 10
+    Noutput_NS = 40
     dx_output_NS = domain_length * 1000 / Noutput_NS
     output_y_N = output_y + 9936
 
