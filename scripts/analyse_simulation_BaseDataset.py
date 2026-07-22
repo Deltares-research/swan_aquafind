@@ -1,13 +1,10 @@
 import sys
 import os
-from datetime import datetime, timedelta
-import itertools
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 from matplotlib.colors import BoundaryNorm
-from decimal import Decimal, ROUND_HALF_UP
 import xarray as xr
 import math
 import argparse
@@ -15,28 +12,43 @@ import re
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
+
 #################################
-## script to setup SWAN simulations
+## script to analyse SWAN simulations
 ## Requirements:
 ## - swan toolbox
-## - Comment this line in innit of swan_postprocessing\: from .animate_**
+
 print("Python: current working directory:", os.getcwd())
 
 ## add swan toolbox to path
 sys.path.append(
     os.path.abspath(os.path.join("swan_aquafind", "scripts", "swan-py-toolbox"))
 )
-
 from swanToolBox import extract_accuracy_data
 
 from swanToolBox.swan_postprocessing.read_SWAN import (
     read_SWAN_tab,
 )
 
+# Comment this line in innit of swan_postprocessing\: from .animate_**
+
+
+def git_version():
+    from subprocess import Popen, PIPE
+
+    gitproc = Popen(
+        ["git", "rev-parse", "HEAD"],
+        stdout=PIPE,
+        cwd=os.path.join(os.getcwd(), "swan_aquafind"),
+    )
+    (stdout, _) = gitproc.communicate()
+    return stdout.strip()
+
 
 ###############################################################################
 ## user inputs
 ###############################################################################
+
 parser = argparse.ArgumentParser(description="Pass variables to Python script")
 parser.add_argument("--sim_name", type=str, help="sim_name")
 args = parser.parse_args()
@@ -44,6 +56,7 @@ args = parser.parse_args()
 sim_name = args.sim_name
 
 print("analysing:", sim_name)
+
 ## path to the main folder where the simulations will be stored
 model_path = "01_sims"
 fig_path = ""
@@ -55,14 +68,11 @@ analyse_points = True
 spec_output = True
 write_netCDF = True
 
-
 output_y = 30000
 
 depth = 2000
 
 spin_up_time = np.timedelta64(3, "h")
-
-
 
 match = re.search(r"Tp=([\d.]+)", sim_name)
 offshore_peak_period = float(match.group(1))
@@ -76,14 +86,8 @@ match5 = re.search(r"Hm0=([\d.]+)", sim_name)
 offshore_wave_height = float(match5.group(1))
 match6 = re.search(r"Dspr=([\d.]+)", sim_name)
 offshore_dspr = float(match6.group(1))
-match7 = re.search(r"HE10=([\d.]+)", sim_name)
-offshore_swell_wave_height = float(match7.group(1))
-match8 = re.search(r"Tp2=([\d.]+)", sim_name)
-offshore_swell_peak_period = float(match8.group(1))
-match9 = re.search(r"Dir2=([\d.]+)", sim_name)
-offshore_swell_wave_dir = float(match9.group(1))
-match10 = re.search(r"Dspr2=([\d.]+)", sim_name)
-offshore_swell_dspr = float(match10.group(1))
+
+
 ###############################################################################
 ## helper functions
 ###############################################################################
@@ -103,21 +107,12 @@ def groupspeed(h, T):
     cg = n * c
     return cg
 
-def git_version():
-    from subprocess import Popen, PIPE
 
-    gitproc = Popen(
-        ["git", "rev-parse", "HEAD"],
-        stdout=PIPE,
-        cwd=os.path.join(os.getcwd(), "swan_aquafind"),
-    )
-    (stdout, _) = gitproc.communicate()
-    return stdout.strip()
 ###############################################################################
 ## analyse sims
 ###############################################################################
 
-failed_sims = []
+
 # Check if running in Docker (output folder exists in current directory)
 IS_DOCKER = os.path.exists("output")
 
@@ -463,149 +458,133 @@ try:
             os.path.join(path_output, "POINTS_P2.TAB")
         )  # does not work perfectly
 
-        tab_dummy = pd.read_csv(
-            os.path.join(path_output, "POINTS_P2.TAB"),
-            header=None,
-            skiprows=7,
-            delimiter=r"\s+",
+        forced_conditions = np.loadtxt(
+            os.path.join(path_output, "..", "wave.par"), skiprows=1
         )
 
-        # forced_conditions = np.loadtxt(
-        #     os.path.join(path_output, "..", "wave.par"), skiprows=1
-        # )
+        for xlocs in [output_x, 29000]:
 
+            fig = plt.figure(figsize=[12, 12], layout="constrained")
 
-        fig = plt.figure(figsize=[12, 12], layout="constrained")
-        plt.plot(tab_dummy.iloc[:, 1], tab_dummy.iloc[:, 2],'k.')
-        plt.plot(tab_data.Xp[np.where(tab_data.Xp == output_x)[0][0]],
-            tab_data.Yp.values[np.where(tab_data.Yp == output_y)[0][0]],'ro')
+            ax = plt.subplot(2, 2, 1)
+            ax.plot(
+                tab_data.Time.values,
+                tab_data.Hsig.values[
+                    np.where(tab_data.Xp == xlocs)[0][0],
+                    np.where(tab_data.Yp == output_y)[0][0],
+                    :,
+                ],
+                label="model x = {:2.2f}".format(xlocs),
+            )
+            ax.plot(
+                tab_data.Time.values,
+                tab_data.Hsig.values[
+                    np.where(tab_data.Xp == 0)[0][0],
+                    np.where(tab_data.Yp == output_y)[0][0],
+                    :,
+                ],
+                label="model x = 0",
+            )
+            ax.plot(
+                tab_data.Time.values,
+                forced_conditions[:, 1],
+                "k--",
+                label="offshore Hm0",
+            )
+            ax.xaxis.set_major_locator(mdates.HourLocator(interval=3))
+            ax.xaxis.set_major_formatter(mdates.DateFormatter("%H:%M"))
+            ax.set_ylabel("$H_{m0}$ [$m$]")
+            ax.legend(loc="best")
 
-        plt.xlabel('X Position')
-        plt.ylabel('Y Position')
-        plt.legend(['points', 'output point plotted'])
-        plt.title('Buoy Locations')
-        plt.savefig(os.path.join(fig_path, sim_name, "buoy_locations.png"))
-        plt.close(fig)
+            ax = plt.subplot(2, 2, 2)
+            ax.plot(
+                tab_data.Time.values,
+                tab_data.TPsmoo.values[
+                    np.where(tab_data.Xp == xlocs)[0][0],
+                    np.where(tab_data.Yp == output_y)[0][0],
+                    :,
+                ],
+            )
+            ax.plot(
+                tab_data.Time.values,
+                tab_data.TPsmoo.values[
+                    np.where(tab_data.Xp == 0)[0][0],
+                    np.where(tab_data.Yp == output_y)[0][0],
+                    :,
+                ],
+                label="model x = 0",
+            )
+            ax.plot(tab_data.Time.values, forced_conditions[:, 2], "k--")
+            ax.set_ylim(0)
+            ax.xaxis.set_major_locator(mdates.HourLocator(interval=3))
+            ax.xaxis.set_major_formatter(mdates.DateFormatter("%H:%M"))
+            ax.set_ylabel("$T_{p}$ [$s$]")
 
-        fig = plt.figure(figsize=[12, 12], layout="constrained")
+            ax = plt.subplot(2, 2, 3)
+            ax.plot(
+                tab_data.Time.values,
+                tab_data.Dir.values[
+                    np.where(tab_data.Xp == xlocs)[0][0],
+                    np.where(tab_data.Yp == output_y)[0][0],
+                    :,
+                ],
+            )
 
-        ax = plt.subplot(2, 2, 1)
-        ax.plot(
-            tab_data.Time.values,
-            tab_data.Hsig.values[
-                np.where(tab_data.Xp == output_x)[0][0],
-                np.where(tab_data.Yp == output_y)[0][0],
-                :,
-            ],
-            label="model x = {:2.2f}".format(output_x),
-        )
-        ax.plot(
-            tab_data.Time.values,
-            tab_data.Hsig.values[
-                np.where(tab_data.Xp == 0)[0][0],
-                np.where(tab_data.Yp == output_y)[0][0],
-                :,
-            ],
-            label="model x = 0",
-        )
-        # ax.plot(
-        #     tab_data.Time.values,
-        #     forced_conditions[:, 1],
-        #     "k--",
-        #     label="offshore Hm0",
-        # )
-        ax.xaxis.set_major_locator(mdates.HourLocator(interval=3))
-        ax.xaxis.set_major_formatter(mdates.DateFormatter("%H:%M"))
-        ax.set_ylabel("$H_{m0}$ [$m$]")
-        ax.legend()
+            ax.plot(
+                tab_data.Time.values,
+                tab_data.Dir.values[
+                    np.where(tab_data.Xp == 0)[0][0],
+                    np.where(tab_data.Yp == output_y)[0][0],
+                    :,
+                ],
+                label="model x = 0",
+            )
+            ax.plot(tab_data.Time.values, forced_conditions[:, 3], "k--")
+            ax.xaxis.set_major_locator(mdates.HourLocator(interval=3))
+            ax.xaxis.set_major_formatter(mdates.DateFormatter("%H:%M"))
+            ax.set_xticks(
+                ax.get_xticks(), ax.get_xticklabels(), rotation=45, ha="right"
+            )
+            ax.set_ylabel(r"$\theta_m$ [$^\circ$]")
 
-        ax = plt.subplot(2, 2, 2)
-        ax.plot(
-            tab_data.Time.values,
-            tab_data.TPsmoo.values[
-                np.where(tab_data.Xp == output_x)[0][0],
-                np.where(tab_data.Yp == output_y)[0][0],
-                :,
-            ],
-        )
-        ax.plot(
-            tab_data.Time.values,
-            tab_data.TPsmoo.values[
-                np.where(tab_data.Xp == 0)[0][0],
-                np.where(tab_data.Yp == output_y)[0][0],
-                :,
-            ],
-            label="model x = 0",
-        )
-        # ax.plot(tab_data.Time.values, forced_conditions[:, 2], "k--")
-        ax.set_ylim(0)
-        ax.xaxis.set_major_locator(mdates.HourLocator(interval=3))
-        ax.xaxis.set_major_formatter(mdates.DateFormatter("%H:%M"))
-        ax.set_ylabel("$T_{p}$ [$s$]")
-
-        ax = plt.subplot(2, 2, 3)
-        ax.plot(
-            tab_data.Time.values,
-            tab_data.Dir.values[
-                np.where(tab_data.Xp == output_x)[0][0],
-                np.where(tab_data.Yp == output_y)[0][0],
-                :,
-            ],
-        )
-
-        ax.plot(
-            tab_data.Time.values,
-            tab_data.Dir.values[
-                np.where(tab_data.Xp == 0)[0][0],
-                np.where(tab_data.Yp == output_y)[0][0],
-                :,
-            ],
-            label="model x = 0",
-        )
-        # ax.plot(tab_data.Time.values, forced_conditions[:, 3], "k--")
-        ax.xaxis.set_major_locator(mdates.HourLocator(interval=3))
-        ax.xaxis.set_major_formatter(mdates.DateFormatter("%H:%M"))
-        ax.set_xticks(ax.get_xticks(), ax.get_xticklabels(), rotation=45, ha="right")
-        ax.set_ylabel(r"$\theta_m$ [$^\circ$]")
-
-        ax = plt.subplot(2, 2, 4)
-        ax.plot(
-            tab_data.Time.values,
-            tab_data.Dspr.values[
-                np.where(tab_data.Xp == output_x)[0][0],
-                np.where(tab_data.Yp == output_y)[0][0],
-                :,
-            ],
-        )
-        ax.plot(
-            tab_data.Time.values,
-            tab_data.Dspr.values[
-                np.where(tab_data.Xp == 0)[0][0],
-                np.where(tab_data.Yp == output_y)[0][0],
-                :,
-            ],
-            label="model x = 0",
-        )
-        # ax.plot(
-        #     tab_data.Time.values,
-        #     tab_data.Dspr.values[
-        #         np.where(tab_data.Xp == 1000)[0][0],
-        #         np.where(tab_data.Yp == output_y)[0][0],
-        #         :,
-        #     ],
-        #     label="model x = 1500",
-        # )
-        # ax.plot(tab_data.Time.values, forced_conditions[:, 4], "k--")
-        ax.xaxis.set_major_locator(mdates.HourLocator(interval=3))
-        ax.xaxis.set_major_formatter(mdates.DateFormatter("%H:%M"))
-        ax.set_ylabel(r"$D_{spr}$ [$^\circ$]")
-        fig.savefig(os.path.join(figure_output_path, f"point_output.png"))
-        plt.close(fig)
+            ax = plt.subplot(2, 2, 4)
+            ax.plot(
+                tab_data.Time.values,
+                tab_data.Dspr.values[
+                    np.where(tab_data.Xp == xlocs)[0][0],
+                    np.where(tab_data.Yp == output_y)[0][0],
+                    :,
+                ],
+            )
+            ax.plot(
+                tab_data.Time.values,
+                tab_data.Dspr.values[
+                    np.where(tab_data.Xp == 0)[0][0],
+                    np.where(tab_data.Yp == output_y)[0][0],
+                    :,
+                ],
+                label="model x = 0",
+            )
+            # ax.plot(
+            #     tab_data.Time.values,
+            #     tab_data.Dspr.values[
+            #         np.where(tab_data.Xp == 1000)[0][0],
+            #         np.where(tab_data.Yp == output_y)[0][0],
+            #         :,
+            #     ],
+            #     label="model x = 1500",
+            # )
+            ax.plot(tab_data.Time.values, forced_conditions[:, 4], "k--")
+            ax.xaxis.set_major_locator(mdates.HourLocator(interval=3))
+            ax.xaxis.set_major_formatter(mdates.DateFormatter("%H:%M"))
+            ax.set_ylabel(r"$D_{spr}$ [$^\circ$]")
+            fig.savefig(os.path.join(figure_output_path, f"point_output{xlocs}.png"))
+            plt.close(fig)
 
     #################################################
     ## quality checks
     #################################################
-    
+
     ########## SWAN warnings ######################################################
     SWAN_warning_message = []
     # open the PRINT text file and check for warnings
@@ -653,7 +632,6 @@ try:
     ############ check based on Hm0, Tp during spinuptime
     id_wanted = (swan_spec.time.values - swan_spec.time[0].values) <= spin_up_time
 
-
     Hm0_x0 = tab_data.Hsig.values[
         np.where(tab_data.Xp == 0)[0][0],
         np.where(tab_data.Yp == output_y)[0][0],
@@ -687,20 +665,19 @@ try:
         passed_quality_checks = False
         error_message.append("Tp deviation during spinup")
 
-
     ## remove spinup time
     id_wanted = (swan_spec.time.values - swan_spec.time[0].values) > spin_up_time
     ## select only points with the same y location
-    index_loc_spec = np.where(
-        (swan_spec.y.values >0) ## selection all points
+    y_index = np.where(
+        (swan_spec.y.values == output_y)
+        # & ((swan_spec.x.values == output_x) | (swan_spec.x.values == 0))
     )[0]
 
-    #E = swan_spec.density.isel(points=index_loc_spec).sel(time=id_wanted).values
-    E = swan_spec.density.sel(time=id_wanted).values
+    E = swan_spec.density.isel(points=y_index).sel(time=id_wanted).values
 
     Tp_at_outputx = tab_data.TPsmoo.values[
         :,
-        :,
+        np.where(tab_data.Yp == output_y)[0][0],
         :,
     ]
     distance_array = np.floor(groupspeed(depth, Tp_at_outputx) * 1800 / 1000) * 1000
@@ -720,13 +697,13 @@ try:
 
     if np.abs(np.nanmean(swan_spec.depth.values) - depth) > 0.1:
         print(f"depth is not constant!")
-    passed_quality_checks = False
-    error_message.append("depth not constant")
+        passed_quality_checks = False
+        error_message.append("depth not constant")
 
     if np.abs(avg_wind - wind) > 0.1:
         print(f"wind speed is not constant in time!")
-    passed_quality_checks = False
-    error_message.append("wind speed not constant")
+        passed_quality_checks = False
+        error_message.append("wind speed not constant")
 
     # check wind from map output, check if direction is constant
     if avg_wind != 0:
@@ -743,6 +720,7 @@ try:
             dir_trigger = False
             passed_quality_checks = False
             error_message.append("wind direction not constant")
+
         else:
             print(f"wind direction is constant")
             dir_trigger = True
@@ -753,64 +731,52 @@ try:
     ## netcdf
     #################################################
     if spec_output and write_netCDF:
+
         if dir_trigger:
-
-            Hm0_nc = np.zeros((E.shape[0], E.shape[1]))
-            Tp_nc = np.zeros((E.shape[0], E.shape[1]))
-            
-            for ii in range(E.shape[1]):
-                Hm0_nc[:, ii] = tab_data.Hsig.values[        
-                                    np.where(tab_data.Xp == swan_spec.density.x.values[ii])[0][0],
-                                    np.where(tab_data.Yp == swan_spec.density.y.values[ii])[0][0],
-                                    id_wanted,
-                                ].T
-                Tp_nc[:, ii] = tab_data.TPsmoo.values[        
-                                    np.where(tab_data.Xp == swan_spec.density.x.values[ii])[0][0],
-                                    np.where(tab_data.Yp == swan_spec.density.y.values[ii])[0][0],
-                                    id_wanted,
-                                ].T               
-
-
             ds = xr.Dataset(
                 {
                     "energy_density": (
-                        ("time", "points", "frequency", "directions"),
+                        ("time", "x_location", "frequency", "directions"),
                         E,
                     ),
                     "wind_speed": (
-                        ("time", "points",),
-                        wind * np.ones((E.shape[0], E.shape[1])),
+                        ("time", "x_location"),
+                        wind * np.ones_like(distance_array.T[id_wanted, :]),
                     ),
                     "wind_direction": (
-                        ("time", "points"),
-                        wind_dir * np.ones((E.shape[0], E.shape[1])),
+                        ("time", "x_location"),
+                        wind_dir * np.ones_like(distance_array.T[id_wanted, :]),
                     ),
                     "Hs": (
-                        ("time", "points"),
-                        Hm0_nc,
+                        ("time", "x_location"),
+                        tab_data.Hsig.values[
+                            :,
+                            np.where(tab_data.Yp == output_y)[0][0],
+                            id_wanted,
+                        ].T,
                     ),
                     "Tp": (
-                        ("time", "points"),
-                        Tp_nc,
+                        ("time", "x_location"),
+                        tab_data.TPsmoo.values[
+                            :,
+                            np.where(tab_data.Yp == output_y)[0][0],
+                            id_wanted,
+                        ].T,
                     ),
                     "mean_offshore_wave_height": offshore_wave_height,
                     "mean_offshore_peak_period": offshore_peak_period,
                     "mean_offshore_wave_direction": offshore_wave_dir,
                     "mean_offshore_dspr": offshore_dspr,
-                    "offshore_swell_wave_height": offshore_swell_wave_height,
-                    "offshore_swell_peak_period": offshore_swell_peak_period,
-                    "offshore_swell_wave_direction": offshore_swell_wave_dir,
-                    "offshore_swell_dspr": offshore_swell_dspr,
                     "water_depth": (
-                        ("points"),
-                        depth * np.ones((len(swan_spec.x[index_loc_spec]),)),
+                        ("x_location"),
+                        depth * np.ones(len(swan_spec.x[y_index])),
                     ),
-                    # "distance_30min": (
-                    #     ("time", "points"),
-                    #     distance_array.T[id_wanted, :],
-                    # ),
+                    "distance_30min": (
+                        ("time", "x_location"),
+                        distance_array.T[id_wanted, :],
+                    ),
                     "groupspeed_at_peakperiod": (
-                        ("time", "points", "directions"),
+                        ("time", "x_location", "directions"),
                         groupspeed_at_peakperiod,
                     ),
                     "groupspeed_per_freq": ("frequency", groupspeed_array_per_freq),
@@ -825,9 +791,8 @@ try:
                 },
                 coords={
                     "time": swan_spec.time[id_wanted].values,
-                    "points": np.arange(len(swan_spec.x[index_loc_spec].values)),
-                    "x_location": ("points", swan_spec.x[index_loc_spec].values) ,
-                    "y_location": ("points", swan_spec.y[index_loc_spec].values),
+                    "x_location": swan_spec.x[y_index].values,
+                    "y_location": output_y,
                     "frequency": swan_spec.frequency.values,
                     "directions": swan_spec.direction.values,
                 },
@@ -857,9 +822,9 @@ try:
         ds["energy_density"].attrs["long_name"] = "Energy Density"
         ds["wind_speed"].attrs["units"] = "m/s"
         ds["wind_direction"].attrs["units"] = "degrees from north (clockwise positive)"
-        #ds["distance_30min"].attrs[
-        #    "description"
-        #] = "Distance wave with peak period travels in 30 minutes based on group speed in deep water"
+        ds["distance_30min"].attrs[
+            "description"
+        ] = "Distance wave with peak period travels in 30 minutes based on group speed in deep water"
         ds["groupspeed_at_peakperiod"].attrs["units"] = "m/s"
         ds["groupspeed_per_freq"].attrs["units"] = "m/s"
         ds.attrs["description"] = (
@@ -870,6 +835,7 @@ try:
             git_revision.decode("utf-8")
         )
 
+        # locatie, frequentie, invoer, ... etc toevoegen
 
         ds.to_netcdf(
             os.path.join(path_output, "SPEC_P2.nc"),
@@ -880,4 +846,3 @@ try:
 
 except Exception as e:
     print(f"Error processing {sim_name}: {e}")
-
