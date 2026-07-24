@@ -56,7 +56,7 @@ spec_output = True
 write_netCDF = True
 
 
-output_y = 30000
+output_y = 40000
 
 depth = 2000
 
